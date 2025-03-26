@@ -5,7 +5,7 @@ const MyForm = () => {
     const {
         register, 
         handleSubmit,
-        formstate: { errors },
+        formState: { errors },
 
     } = useForm();
 
