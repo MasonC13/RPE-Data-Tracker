@@ -10,10 +10,23 @@ const MyForm = () => {
 
     const [submitted, setSubmitted] = useState(false);
 
-    const onSubmit = (data) => {
-        console.log(data); 
-        setSubmitted(true);
-    };
+    const onSubmit = async (data) => {
+        try {
+            const response = await fetch("http://127.0.0.1:5000/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+    
+            if (response.ok) {
+                setSubmitted(true);
+            } else {
+                console.error("Error saving data");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    };    
 
     if (submitted) {
         return <div className="p-4 text-center text-lg font-bold">Thank you for your response!</div>;
