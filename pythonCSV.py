@@ -1,53 +1,44 @@
 import json
 import gspread
-from google.oauth2.service_account import Credentials
 import pandas as pd
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from google.oauth2.service_account import Credentials
 
-# Load Credentials
-with open("credentials.json", "r") as file:
-    creds_data = json.load(file)
+def get_data_from_sheets():
+    """Fetch and process data from Google Sheets"""
+    with open("credentials.json", "r") as file:
+        creds_data = json.load(file)
 
-# Google Sheets API Setup
-scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-creds = Credentials.from_service_account_info(creds_data, scopes=scopes)
-client = gspread.authorize(creds)       
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = Credentials.from_service_account_info(creds_data, scopes=scopes)
+    client = gspread.authorize(creds)
 
-sheet_id = "1W-wT-2nBcXROuThRrMFK6rTLljDC02aJ6kqL8iDlitE"  
-workbook = client.open_by_key(sheet_id)     
-worksheet = workbook.worksheet("RPE Sheet")  
+    sheet_id = "1W-wT-2nBcXROuThRrMFK6rTLljDC02aJ6kqL8iDlitE"
+    workbook = client.open_by_key(sheet_id)
+    worksheet = workbook.worksheet("RPE Sheet")
 
-data = worksheet.get_all_records()  
-df = pd.DataFrame(data)  
+    data = worksheet.get_all_records()
+    df = pd.DataFrame(data)
+    df.columns = df.columns.str.strip()
 
-# Email Setup (Loaded from JSON)
-SMTP_SERVER = creds_data["email_settings"]["smtp_server"]
-SMTP_PORT = creds_data["email_settings"]["smtp_port"]
-SENDER_EMAIL = creds_data["email_settings"]["sender_email"]
-SENDER_PASSWORD = creds_data["email_settings"]["sender_password"]
+    print("Available columns:", df.columns.tolist())
 
-def send_email(recipient):
-    """Function to send an email to a recipient."""
-    try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+    date_columns = df.columns[6:]
+    df[date_columns] = df[date_columns].apply(pd.to_numeric, errors='coerce')
+    df['Average Value'] = df[date_columns].mean(axis=1)
 
-        msg = MIMEMultipart()
-        msg["From"] = SENDER_EMAIL
-        msg["To"] = recipient
-        msg["Subject"] = "RPE Data"  # Placeholder subject
-        msg.attach(MIMEText("Please fill out your RPE data today", "plain"))  # Empty message for now
+    id_columns = ['Position']
+    if 'Name' in df.columns:
+        id_columns.append('Name')
+    if 'Email' in df.columns:
+        id_columns.append('Email')
 
-        server.sendmail(SENDER_EMAIL, recipient, msg.as_string())
-        print(f"Email sent to {recipient}")
+    print("Using ID columns:", id_columns)
 
-        server.quit()
-    except Exception as e:
-        print(f"Error sending email to {recipient}: {e}")
+    df_long = df.melt(id_vars=id_columns, 
+                      value_vars=date_columns, 
+                      var_name="Date", 
+                      value_name="Value")
+    df_long['Date'] = pd.to_datetime(df_long['Date'], errors='coerce')
+    df_position_daily_avg = df_long.groupby(['Position', 'Date'])['Value'].mean().reset_index()
 
-# Send emails to all users
-for email in df["Email"].dropna().unique():  # Ensure no empty emails
-    send_email(email)
+    return df, df_long, df_position_daily_avg
