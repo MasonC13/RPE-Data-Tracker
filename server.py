@@ -21,5 +21,4 @@ def submit_form():
     return jsonify({"message": "Data saved successfully"}), 200
 
 if __name__ == "__main__":
-    app.run(debug=True)
-    
+    app.run(debug=True, port=4025)
