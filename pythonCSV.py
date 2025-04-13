@@ -1,27 +1,13 @@
-import json
-import gspread
 import pandas as pd
-from google.oauth2.service_account import Credentials
 
-def get_data_from_sheets():
-    """Fetch and process data from Google Sheets"""
-    with open("credentials.json", "r") as file:
-        creds_data = json.load(file)
-
-    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = Credentials.from_service_account_info(creds_data, scopes=scopes)
-    client = gspread.authorize(creds)
-
-    sheet_id = "1W-wT-2nBcXROuThRrMFK6rTLljDC02aJ6kqL8iDlitE"
-    workbook = client.open_by_key(sheet_id)
-    worksheet = workbook.worksheet("RPE Sheet")
-
-    data = worksheet.get_all_records()
-    df = pd.DataFrame(data)
+def get_data_from_csv():
+    """Fetch and process data from responses.csv"""
+    df = pd.read_csv("responses.csv")
     df.columns = df.columns.str.strip()
 
     print("Available columns:", df.columns.tolist())
 
+    # Adjust the range if the date columns are in different positions
     date_columns = df.columns[6:]
     df[date_columns] = df[date_columns].apply(pd.to_numeric, errors='coerce')
     df['Average Value'] = df[date_columns].mean(axis=1)
