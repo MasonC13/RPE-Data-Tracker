@@ -6,7 +6,7 @@ import io
 import json
 import plotly.express as px
 from datetime import datetime
-from pythonCSV import get_data_from_sheets
+from pythonCSV import get_data_from_csv
 
 def send_email(recipient, subject="RPE Data Reminder", message="Please fill out your RPE data today", include_graph=False):
     """Send an email with optional graph attachment."""
@@ -45,7 +45,7 @@ def send_email(recipient, subject="RPE Data Reminder", message="Please fill out 
         msg.attach(MIMEText(message, "plain"))
 
         if include_graph:
-            df, _, df_position_daily_avg = get_data_from_sheets()
+            df, _, df_position_daily_avg = get_data_from_csv()
             fig = px.line(df_position_daily_avg, x='Date', y='Value', color='Position', title="Position Group Average Change Over Time")
             img_bytes = io.BytesIO()
             fig.write_image(img_bytes, format="png")
