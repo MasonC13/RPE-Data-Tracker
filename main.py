@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import dash_bootstrap_components as dbc
 from emailNotif import send_email
-from pythonCSV import get_data_from_sheets
+from pythonCSV import get_data_from_csv
 from io import StringIO
 from coachReport import generate_coach_report
 
@@ -452,7 +452,7 @@ def render_notifications_tab():
     [Input('refresh-data-btn', 'n_clicks')]
 )
 def refresh_data(n_clicks):
-    df, df_long, df_position_daily_avg = get_data_from_sheets()
+    df, df_long, df_position_daily_avg = get_data_from_csv()
     
     # Add debug output to help diagnose data issues
     print("DataFrame columns:", df.columns.tolist())
