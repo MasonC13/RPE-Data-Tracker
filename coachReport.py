@@ -5,23 +5,13 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from datetime import datetime, timedelta
-import io
-import json
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
-from datetime import datetime, timedelta
 import pandas as pd
-import numpy as np
 import numpy as np
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.enums import TA_CENTER
 
 # Truman State University Colors
@@ -51,16 +41,15 @@ def generate_coach_report(df, df_position_avg, df_position_daily_avg, selected_c
     """
     print("Starting coach report generation...")
     
-    print("Starting coach report generation...")
-    
     # Default coach emails - replace with actual coach emails
     default_coaches = [
-        "mc6383@truman.edu",
+        "head_coach@truman.edu",
+        "assistant_coach@truman.edu",
+        "strength_coach@truman.edu"
     ]
     
     # Use provided coaches or default list
     coach_emails = selected_coaches if selected_coaches else default_coaches
-    print(f"Preparing to send reports to: {coach_emails}")
     print(f"Preparing to send reports to: {coach_emails}")
     
     try:
@@ -104,23 +93,23 @@ def generate_coach_report(df, df_position_avg, df_position_daily_avg, selected_c
         else:
             team_avg = 0
         
-        email_subject = f"Truman Bulldogs - RPE Report {today}"
+        email_subject = f"Truman Bulldogs - Performance Report {today}"
         email_message = f"""
 Hello Coach,
 
-Attached is the RPE report for Truman State Football as of {today}.
+Attached is the latest performance report for the Truman State Bulldogs team as of {today}.
 
 QUICK SUMMARY:
 - Team Average RPE: {team_avg:.2f}
 - {len(df)} athletes tracked
 - Data collected from {len([col for col in df.columns if col not in ['Email', 'Last 4 digits', 'Last Name', 'First Name', 'Position', 'Summer Attendance', 'Name', 'Average Value']])} workout sessions
 
-The report includes a section highlighting athletes with high acute:chronic workload ratios (>1.5), which may indicate increased injury risk.
+The report includes a special section highlighting athletes with high acute:chronic workload ratios (>1.5), which may indicate increased injury risk.
 
 The full report is attached as a PDF with detailed breakdowns by position and individual athletes.
 
 Go Bulldogs!
-Truman State Football Training Staff
+Truman State Coaching Staff
 """
         
         # Send emails to coaches
@@ -164,51 +153,8 @@ Truman State Football Training Staff
 
 def send_email_with_pdf(recipient, subject, message, pdf_buffer):
     """Send email with PDF report attached"""
-        
-        # Send emails to coaches
-        print("Sending emails to coaches...")
-        for email in coach_emails:
-            try:
-                success = send_email_with_pdf(
-                    recipient=email,
-                    subject=email_subject,
-                    message=email_message,
-                    pdf_buffer=buffer
-                )
-                
-                if success:
-                    success_count += 1
-                    print(f"Successfully sent email to {email}")
-                else:
-                    fail_count += 1
-                    print(f"Failed to send email to {email}")
-            except Exception as e:
-                print(f"Error sending coach report to {email}: {str(e)}")
-                import traceback
-                traceback.print_exc()
-                fail_count += 1
-        
-        return {
-            "success_count": success_count,
-            "fail_count": fail_count,
-            "message": f"Coach reports sent: {success_count} successful, {fail_count} failed."
-        }
-    
-    except Exception as e:
-        print(f"Error in generate_coach_report: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return {
-            "success_count": 0,
-            "fail_count": len(coach_emails),
-            "message": f"Failed to generate coach reports: {str(e)}"
-        }
-
-def send_email_with_pdf(recipient, subject, message, pdf_buffer):
-    """Send email with PDF report attached"""
     
     try:
-        # Load credentials
         # Load credentials
         with open("credentials.json", "r") as file:
             creds_data = json.load(file)
@@ -233,11 +179,6 @@ def send_email_with_pdf(recipient, subject, message, pdf_buffer):
         msg["From"] = SENDER_EMAIL
         msg["To"] = recipient
         msg["Subject"] = subject
-        # Create email with attachment
-        msg = MIMEMultipart()
-        msg["From"] = SENDER_EMAIL
-        msg["To"] = recipient
-        msg["Subject"] = subject
 
         # Attach the message
         msg.attach(MIMEText(message, "plain"))
@@ -364,136 +305,7 @@ def calculate_acute_chronic_ratio(df):
         print(f"Calculated A:C ratios for {len(ac_df)} athletes")
         return ac_df
         
-        # Attach the message
-        msg.attach(MIMEText(message, "plain"))
-        
-        # Attach the PDF
-        pdf_buffer.seek(0)  # Reset buffer position to beginning
-        pdf_attachment = MIMEApplication(pdf_buffer.read(), _subtype="pdf")
-        pdf_attachment.add_header('Content-Disposition', 'attachment', filename="TrumanBulldogs_Report.pdf")
-        msg.attach(pdf_attachment)
-        
-        # Connect to server and send
-        print(f"Connecting to SMTP server: {SMTP_SERVER}:{SMTP_PORT}")
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        print(f"Logging in as: {SENDER_EMAIL}")
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        print(f"Sending email to: {recipient}")
-        server.sendmail(SENDER_EMAIL, recipient, msg.as_string())
-        server.quit()
-        
-        print(f"Email with PDF report sent to {recipient}")
-        return True
-        
     except Exception as e:
-        print(f"Error sending email with PDF to {recipient}: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return False
-
-def calculate_acute_chronic_ratio(df):
-    """
-    Calculate acute:chronic workload ratio for each athlete
-    
-    Acute = average of last 7 days
-    Chronic = overall average
-    
-    Returns a DataFrame with athlete information and A:C ratios
-    """
-    try:
-        print("Calculating acute:chronic workload ratios...")
-        
-        # Skip if we don't have the necessary data
-        if 'Last Name' not in df.columns or 'Position' not in df.columns:
-            print("Missing required columns for A:C ratio calculation")
-            return pd.DataFrame()
-        
-        # Create a copy to avoid modifying the original
-        df_copy = df.copy()
-        
-        # Get date columns
-        base_columns = ['Email', 'Last 4 digits', 'Last Name', 'First Name', 'Position', 'Summer Attendance', 'Name', 'Average Value']
-        date_columns = [col for col in df_copy.columns if col not in base_columns]
-        
-        # Sort date columns by date
-        date_columns.sort(key=lambda x: pd.to_datetime(x, errors='coerce'))
-        
-        # For each athlete, calculate acute (last 7 days) and chronic (all-time) workload
-        result_data = []
-        
-        for _, row in df_copy.iterrows():
-            if pd.isna(row['Last Name']) or pd.isna(row['Position']):
-                continue
-                
-            last_name = row['Last Name']
-            position = row['Position']
-            
-            # Scale values if needed
-            values = []
-            for col in date_columns:
-                value = row[col]
-                if pd.notna(value) and value != '':
-                    try:
-                        # Convert to number and scale if needed
-                        if isinstance(value, str):
-                            value = ''.join(c for c in value if c.isdigit() or c == '.')
-                            value = float(value) if value else None
-                        else:
-                            value = float(value)
-                            
-                        if value is not None:
-                            # Scale values outside normal RPE range
-                            if value > 1000:
-                                value /= 1000
-                            elif value > 100:
-                                value /= 100
-                            elif value > 10:
-                                value /= 10
-                                
-                            # Cap at 10
-                            value = min(value, 10.0)
-                            values.append((col, value))
-                    except:
-                        continue
-            
-            if not values:
-                continue
-                
-            # Sort values by date
-            values.sort(key=lambda x: pd.to_datetime(x[0], errors='coerce'))
-            
-            # Get just the values
-            just_values = [v[1] for v in values]
-            
-            # Calculate chronic workload (all-time average)
-            chronic = sum(just_values) / len(just_values) if just_values else 0
-            
-            # Calculate acute workload (last 7 days average)
-            last_7_values = just_values[-7:] if len(just_values) >= 7 else just_values
-            acute = sum(last_7_values) / len(last_7_values) if last_7_values else 0
-            
-            # Calculate A:C ratio
-            ac_ratio = acute / chronic if chronic > 0 else 0
-            
-            result_data.append({
-                'Last Name': last_name,
-                'Position': position,
-                'Acute': acute,
-                'Chronic': chronic,
-                'A:C Ratio': ac_ratio,
-                'Latest RPE': just_values[-1] if just_values else 0
-            })
-        
-        ac_df = pd.DataFrame(result_data)
-        print(f"Calculated A:C ratios for {len(ac_df)} athletes")
-        return ac_df
-        
-    except Exception as e:
-        print(f"Error calculating A:C ratios: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return pd.DataFrame()  # Return empty DataFrame on error
         print(f"Error calculating A:C ratios: {str(e)}")
         import traceback
         traceback.print_exc()
@@ -501,7 +313,6 @@ def calculate_acute_chronic_ratio(df):
 
 def create_pdf_report(df, df_position_avg, df_position_daily_avg):
     """Create a PDF report using ReportLab"""
-    print("Inside create_pdf_report function")
     print("Inside create_pdf_report function")
     
     # Create a buffer to store the PDF
@@ -555,7 +366,7 @@ def create_pdf_report(df, df_position_avg, df_position_daily_avg):
         # Add title
         today = datetime.now().strftime('%B %d, %Y')
         elements.append(Paragraph(f"TRUMAN STATE BULLDOGS", title_style))
-        elements.append(Paragraph(f"RPE Report", subtitle_style))
+        elements.append(Paragraph(f"Summer Workout Performance Report", subtitle_style))
         elements.append(Paragraph(f"Generated on {today}", styles['Italic']))
         elements.append(Spacer(1, 0.2*inch))
         
@@ -721,7 +532,7 @@ def create_pdf_report(df, df_position_avg, df_position_daily_avg):
         elements.append(Spacer(1, 0.2*inch))
         
         # Footer with Truman branding
-        footer_text = "It's a Great Day To Be a Bulldog!"
+        footer_text = "Truman State University Bulldogs - Go Bulldogs!"
         elements.append(Paragraph(footer_text, ParagraphStyle(
             name='Footer',
             parent=styles['Normal'],
