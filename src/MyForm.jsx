@@ -26,62 +26,105 @@ const MyForm = () => {
         } catch (error) {
             console.error("Error:", error);
         }
-    };    
+    };
 
     if (submitted) {
         return <div className="p-4 text-center text-lg font-bold">Thank you for your response!</div>;
     }
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="p-4 border rounded-lg">
-            <div className="mb-6">
-                <label className="block mb-2">Name:</label>
-                <input
-                    {...register("name", { required: "Name is required "})}
-                    className="border p-2 rounded-md w-full"
-                />
-                {errors.name && <p className="text-red-500">{errors.name.message}</p>}
-            </div>
-
+        <form onSubmit={handleSubmit(onSubmit)} className="p-4 border rounded-lg max-w-xl mx-auto">
+            {/* Email */}
             <div className="mb-6">
                 <label className="block mb-2">Email:</label>
                 <input
-                    {...register("email", {
-                        required: "Email is required",
-                        pattern: { value: /\S+@\S+\.\S+/, message: "Invalid email" }, 
-                    })}
+                    {...register("email", { required: "Email is required", pattern: { value: /\S+@\S+\.\S+/, message: "Invalid email" }})}
                     className="border p-2 rounded-md w-full"
                 />
                 {errors.email && <p className="text-red-500">{errors.email.message}</p>}
             </div>
 
+            {/* Last 4 Digits */}
             <div className="mb-6">
-                <label className="block mb-2">Intensity Level:</label>
-                <select
-                    defaultValue=""
-                    {...register("intensityLevel", { required: "Intensity Level is required" })}
+                <label className="block mb-2">Last 4 Digits (Phone):</label>
+                <input
+                    {...register("last4", { required: "Last 4 digits are required", pattern: { value: /^\d{4}$/, message: "Must be 4 digits" }})}
                     className="border p-2 rounded-md w-full"
-                >
-                    <option value="" disabled>Select intensity</option>
-                    {[...Array(10).keys()].map((num) => (
-                        <option key={num + 1} value={num + 1}>{num + 1}</option>
-                    ))}
-                </select>
-                {errors.intensityLevel && <p className="text-red-500">{errors.intensityLevel.message}</p>}
+                />
+                {errors.last4 && <p className="text-red-500">{errors.last4.message}</p>}
             </div>
 
+            {/* First Name */}
             <div className="mb-6">
-                <label className="block mb-2">What type of session did you just complete?</label>
+                <label className="block mb-2">First Name:</label>
+                <input
+                    {...register("firstName", { required: "First name is required" })}
+                    className="border p-2 rounded-md w-full"
+                />
+                {errors.firstName && <p className="text-red-500">{errors.firstName.message}</p>}
+            </div>
+
+            {/* Last Name */}
+            <div className="mb-6">
+                <label className="block mb-2">Last Name:</label>
+                <input
+                    {...register("lastName", { required: "Last name is required" })}
+                    className="border p-2 rounded-md w-full"
+                />
+                {errors.lastName && <p className="text-red-500">{errors.lastName.message}</p>}
+            </div>
+
+            {/* Position */}
+            <div className="mb-6">
+                <label className="block mb-2">Position:</label>
                 <select
                     defaultValue=""
-                    {...register("sessionType", { required: "Session type is required" })}
+                    {...register("position", { required: "Position is required" })}
                     className="border p-2 rounded-md w-full"
                 >
-                    <option value="" disabled>Select session type</option>
-                    <option value="practice">Practice</option>
-                    <option value="weights/conditioning">Weights/Conditioning</option>
+                    <option value="" disabled>Select position</option>
+                    <option value="DB">DB</option>
+                    <option value="DL">DL</option>
+                    <option value="KPS">KPS</option>
+                    <option value="LB">LB</option>
+                    <option value="OL">OL</option>
+                    <option value="QB">QB</option>
+                    <option value="RB">RB</option>
+                    <option value="TE">TE</option>
+                    <option value="WR">WR</option>
                 </select>
-                {errors.sessionType && <p className="text-red-500">{errors.sessionType.message}</p>}
+                {errors.position && <p className="text-red-500">{errors.position.message}</p>}
+            </div>
+
+            {/* Summer Attendance */}
+            <div className="mb-6">
+                <label className="block mb-2">Summer Attendance:</label>
+                <select
+                    defaultValue=""
+                    {...register("summerAttendance", { required: "Please select yes or no" })}
+                    className="border p-2 rounded-md w-full"
+                >
+                    <option value="" disabled>Select option</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                </select>
+                {errors.summerAttendance && <p className="text-red-500">{errors.summerAttendance.message}</p>}
+            </div>
+
+            {/* Intensity Level */}
+            <div className="mb-6">
+                <label className="block mb-2">Intensity Level (1-10):</label>
+                <select
+                    {...register("intensityLevel", { required: "Please select an intensity level" })}
+                    defaultValue=""
+                    className="border p-2 rounded-md w-full"
+                >
+                     <option value="" disabled>Select intensity level</option>
+                     {[...Array(10)].map((_, index) => (
+                     <option key={index} value={index + 1}>{index + 1}</option>
+                     ))}
+                </select>
+                {errors.intensityLevel && <p className="text-red-500">{errors.intensityLevel.message}</p>}
             </div>
 
             <button type="submit" className="bg-blue-500 text-white p-2 rounded-md mt-4">

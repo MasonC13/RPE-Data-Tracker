@@ -1,4 +1,9 @@
 :root {
+  --truman-purple: #4F2D7F;
+  --truman-light-blue: #00B2E3;
+  --truman-purple-light: #8F73B3;
+  --truman-white: #FFFFFF;
+
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -15,11 +20,11 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--truman-light-blue);
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: #53a3cd;
 }
 
 body {
@@ -30,6 +35,8 @@ body {
   min-height: 100vh;
   flex-direction: column;
   justify-content: flex-start;
+  background-color: #242424;
+  color: var(--truman-white);
 }
 
 h1 {
@@ -38,6 +45,7 @@ h1 {
   margin-top: 2rem;
   margin-bottom: 2rem;
   text-align: center;
+  color: var(--truman-purple);
 }
 
 button {
@@ -47,53 +55,79 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--truman-light-blue);
+  color: var(--truman-white);
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: var(--truman-purple-light);
 }
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-/* Add spacing between form elements */
 form > div {
-  margin-bottom: 1.5rem; /* Adds space between form fields */
+  margin-bottom: 1.5rem;
 }
 
-/* Additional styling for labels and inputs */
 form label {
   display: block;
-  margin-bottom: 0.5rem; /* Adds space below each label */
+  margin-bottom: 0.5rem;
+  color: var(--truman-white);
 }
 
 form input,
 form select {
-  width: 100%; /* Make input take up full width of parent container */
-  max-width: 400px; /* Add max width to prevent inputs from being too wide */
+  width: 100%;
+  max-width: 400px;
   padding: 0.8em;
   border-radius: 8px;
   border: 1px solid #ccc;
-  margin: 0 auto; /* Center the inputs */
+  margin: 0 auto;
+  background-color: #1a1a1a;
+  color: var(--truman-white);
 }
 
-/* Style for error messages */
+/* Error messages */
 .text-red-500 {
-  color: #f87171;
+  color: red;
 }
 
+/* Light Mode */
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    background-color: var(--truman-white);
+    color: var(--truman-purple);
   }
-  a:hover {
-    color: #747bff;
+
+  body {
+    background-color: var(--truman-white);
+    color: var(--truman-purple);
   }
+
+  h1 {
+    color: var(--truman-purple);
+  }
+
+  form label {
+    color: var(--truman-purple);
+  }
+
+  form input,
+  form select {
+    background-color: var(--truman-white);
+    color: var(--truman-purple);
+    border-color: var(--truman-purple-light);
+  }
+
   button {
-    background-color: #f9f9f9;
+    background-color: var(--truman-light-blue);
+    color: var(--truman-white);
+  }
+
+  .text-red-500 {
+    color: red;
   }
 }
