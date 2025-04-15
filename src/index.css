@@ -25,85 +25,53 @@ html, body {
   width: 100%;
   margin: 0;
   padding: 0;
-  background-color: #242424;  /* Consistent background */
+  background-color: #242424;
 }
 
 #root {
-  height: 100%;  /* Ensures the root container takes up full height */
-  width: 100%;   /* Ensure the root container takes up full width */
+  height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
 
+/* Center content */
 body {
   display: flex;
-  justify-content: center;  /* Center the content horizontally */
-  align-items: center;  /* Center content vertically */
-  background-color: #242424; /* Consistent background */
+  justify-content: center;
+  align-items: center;
+  background-color: #242424;
   color: var(--truman-white);
   min-height: 100vh;
-  min-width: 100vw;  /* Ensure the body takes full viewport width */
+  min-width: 100vw;
 }
 
-/* Full width and height for iframe */
-iframe {
-  width: 100vw;  /* Full width of the viewport */
-  height: 100vh; /* Full height of the viewport */
-  border: none;
+/* Button styles (same in both modes) */
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: var(--truman-light-blue);
+  color: var(--truman-white);
+  cursor: pointer;
+  transition: border-color 0.25s;
 }
 
-/* Your existing button, form, and other styles go here */
-
-/* Button hover styles */
 button:hover {
   border-color: var(--truman-purple-light);
 }
 
-/* Light Mode */
-@media (prefers-color-scheme: light) {
-  :root {
-    background-color: var(--truman-white);
-    color: var(--truman-purple);
-  }
-
-  body {
-    background-color: var(--truman-white);
-    color: var(--truman-purple);
-  }
-
-  h1 {
-    color: var(--truman-purple);
-  }
-
-  form label {
-    color: var(--truman-purple);
-  }
-
-  form input,
-  form select {
-    background-color: var(--truman-white);
-    color: var(--truman-purple);
-    border-color: var(--truman-purple-light);
-  }
-
-  button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    background-color: var(--truman-light-blue);
-    color: var(--truman-white);
-    cursor: pointer;
-    transition: border-color 0.25s;
-  }
-
-  .text-red-500 {
-    color: red;
-  }
+/* Full width and height for iframe */
+iframe {
+  width: 100vw;
+  height: 100vh;
+  border: none;
 }
 
+/* Form container */
 .form-container {
   display: flex;
   justify-content: center;
@@ -139,7 +107,22 @@ button:hover {
   color: red;
 }
 
+/* Light Mode overrides */
 @media (prefers-color-scheme: light) {
+  :root {
+    background-color: var(--truman-white);
+    color: var(--truman-purple);
+  }
+
+  body {
+    background-color: var(--truman-white);
+    color: var(--truman-purple);
+  }
+
+  h1 {
+    color: var(--truman-purple);
+  }
+
   .form-container form label {
     color: var(--truman-purple);
   }
