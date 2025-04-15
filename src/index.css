@@ -1,3 +1,4 @@
+/* Root color variables and font settings */
 :root {
   --truman-purple: #4F2D7F;
   --truman-light-blue: #00B2E3;
@@ -18,81 +19,44 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: var(--truman-light-blue);
-  text-decoration: inherit;
+/* Ensure full page height and width */
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #242424;  /* Consistent background */
 }
-a:hover {
-  color: #53a3cd;
+
+#root {
+  height: 100%;  /* Ensures the root container takes up full height */
+  width: 100%;   /* Ensure the root container takes up full width */
+  display: flex;
+  flex-direction: column;
 }
 
 body {
-  margin: 0;
   display: flex;
-  place-items: center;
-  min-width: 320px;
+  justify-content: center;  /* Center the content horizontally */
+  align-items: center;  /* Center content vertically */
+  background-color: #242424; /* Consistent background */
+  color: var(--truman-white);
   min-height: 100vh;
-  flex-direction: column;
-  justify-content: flex-start;
-  background-color: #242424;
-  color: var(--truman-white);
+  min-width: 100vw;  /* Ensure the body takes full viewport width */
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-  margin-top: 2rem;
-  margin-bottom: 2rem;
-  text-align: center;
-  color: var(--truman-purple);
+/* Full width and height for iframe */
+iframe {
+  width: 100vw;  /* Full width of the viewport */
+  height: 100vh; /* Full height of the viewport */
+  border: none;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: var(--truman-light-blue);
-  color: var(--truman-white);
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
+/* Your existing button, form, and other styles go here */
+
+/* Button hover styles */
 button:hover {
   border-color: var(--truman-purple-light);
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-form > div {
-  margin-bottom: 1.5rem;
-}
-
-form label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: var(--truman-white);
-}
-
-form input,
-form select {
-  width: 100%;
-  max-width: 400px;
-  padding: 0.8em;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  margin: 0 auto;
-  background-color: #1a1a1a;
-  color: var(--truman-white);
-}
-
-/* Error messages */
-.text-red-500 {
-  color: red;
 }
 
 /* Light Mode */
@@ -123,11 +87,67 @@ form select {
   }
 
   button {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
     background-color: var(--truman-light-blue);
     color: var(--truman-white);
+    cursor: pointer;
+    transition: border-color 0.25s;
   }
 
   .text-red-500 {
     color: red;
+  }
+}
+
+.form-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding-top: 2rem;
+}
+
+.form-container form > div {
+  margin-bottom: 1.5rem;
+}
+
+.form-container form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--truman-white);
+}
+
+.form-container form input,
+.form-container form select {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.8em;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin: 0 auto;
+  background-color: #1a1a1a;
+  color: var(--truman-white);
+}
+
+/* Error messages */
+.form-container .text-red-500 {
+  color: red;
+}
+
+@media (prefers-color-scheme: light) {
+  .form-container form label {
+    color: var(--truman-purple);
+  }
+
+  .form-container form input,
+  .form-container form select {
+    background-color: var(--truman-white);
+    color: var(--truman-purple);
+    border-color: var(--truman-purple-light);
   }
 }

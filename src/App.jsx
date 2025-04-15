@@ -1,15 +1,19 @@
 import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import HomePage from "./HomePage";
 import MyForm from "./MyForm";
+import ReportPage from "./ReportPage";
 
 const App = () => {
-  return (
-    <div className="flex flex-col min-h-screen justify-start items-center">
-      <h1 className="title text-4xl font-bold mt-8 mb-8">Rate of Perceived Exertion Form</h1> 
-      <div className="flex justify-center items-center w-full max-w-md p-4">
-        <MyForm />
-      </div>
-    </div>
-  );
+    return (
+        <Router>
+            <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/form" element={<MyForm />} />
+                <Route path="/report" element={<ReportPage />} />
+            </Routes>
+        </Router>
+    );
 };
 
 export default App;
