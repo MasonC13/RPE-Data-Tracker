@@ -43,9 +43,7 @@ def generate_coach_report(df, df_position_avg, df_position_daily_avg, selected_c
     
     # Default coach emails - replace with actual coach emails
     default_coaches = [
-        "head_coach@truman.edu",
-        "assistant_coach@truman.edu",
-        "strength_coach@truman.edu"
+        "mc6383@truman.edu",
     ]
     
     # Use provided coaches or default list
@@ -93,23 +91,23 @@ def generate_coach_report(df, df_position_avg, df_position_daily_avg, selected_c
         else:
             team_avg = 0
         
-        email_subject = f"Truman Bulldogs - Performance Report {today}"
+        email_subject = f"Truman Bulldogs - RPE Report {today}"
         email_message = f"""
 Hello Coach,
 
-Attached is the latest performance report for the Truman State Bulldogs team as of {today}.
+Attached is the RPE report for Truman State Football as of {today}.
 
 QUICK SUMMARY:
 - Team Average RPE: {team_avg:.2f}
 - {len(df)} athletes tracked
 - Data collected from {len([col for col in df.columns if col not in ['Email', 'Last 4 digits', 'Last Name', 'First Name', 'Position', 'Summer Attendance', 'Name', 'Average Value']])} workout sessions
 
-The report includes a special section highlighting athletes with high acute:chronic workload ratios (>1.5), which may indicate increased injury risk.
+The report includes a section highlighting athletes with high acute:chronic workload ratios (>1.5), which may indicate increased injury risk.
 
 The full report is attached as a PDF with detailed breakdowns by position and individual athletes.
 
 Go Bulldogs!
-Truman State Coaching Staff
+Truman State Football Training Staff
 """
         
         # Send emails to coaches
@@ -366,7 +364,7 @@ def create_pdf_report(df, df_position_avg, df_position_daily_avg):
         # Add title
         today = datetime.now().strftime('%B %d, %Y')
         elements.append(Paragraph(f"TRUMAN STATE BULLDOGS", title_style))
-        elements.append(Paragraph(f"Summer Workout Performance Report", subtitle_style))
+        elements.append(Paragraph(f"RPE Report", subtitle_style))
         elements.append(Paragraph(f"Generated on {today}", styles['Italic']))
         elements.append(Spacer(1, 0.2*inch))
         
@@ -532,7 +530,7 @@ def create_pdf_report(df, df_position_avg, df_position_daily_avg):
         elements.append(Spacer(1, 0.2*inch))
         
         # Footer with Truman branding
-        footer_text = "Truman State University Bulldogs - Go Bulldogs!"
+        footer_text = "It's a Great Day To Be a Bulldog!"
         elements.append(Paragraph(footer_text, ParagraphStyle(
             name='Footer',
             parent=styles['Normal'],

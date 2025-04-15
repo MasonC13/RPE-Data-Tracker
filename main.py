@@ -75,7 +75,7 @@ tabs = dbc.Tabs(
 app.layout = html.Div([
     # Header with Truman styling
     html.Div([
-        html.H1('Truman State Bulldogs - Summer Workout Tracker', 
+        html.H1('Truman State Bulldogs - RPE', 
                 style={
                     'textAlign': 'center', 
                     'margin': '20px',
@@ -83,8 +83,7 @@ app.layout = html.Div([
                     'fontWeight': 'bold'
                 }),
         html.Div([
-            # Optional: Add Truman logo if available
-            # html.Img(src="assets/truman_logo.png", height="60px", style={'marginRight': '20px'}),
+        
         ], style={'textAlign': 'center'})
     ], style={
         'backgroundColor': TRUMAN_WHITE,
@@ -119,7 +118,7 @@ app.layout = html.Div([
     
     # Footer with Truman branding
     html.Div([
-        html.P("Truman State University - Go Bulldogs!", 
+        html.P("It's a Great Day To Be a Bulldog!",
                style={
                    'textAlign': 'center',
                    'color': TRUMAN_WHITE,
@@ -197,7 +196,7 @@ def render_overview_tab(df_position_avg, df_position_daily_avg):
     
     # Overview Tab Content with Truman styling
     return html.Div([
-        html.H3("Bulldog Summer Workout Dashboard", 
+        html.H3("Bulldog RPE Dashboard", 
                 style={
                     'marginBottom': '20px', 
                     'color': TRUMAN_PURPLE,
@@ -336,7 +335,7 @@ def render_overview_tab(df_position_avg, df_position_daily_avg):
         
         # Individual Player Data with Truman styling
         dbc.Card([
-            dbc.CardHeader("Individual Player Performance", 
+            dbc.CardHeader("Individual Player RPE",
                           style={
                               'backgroundColor': TRUMAN_PURPLE, 
                               'color': TRUMAN_WHITE,
