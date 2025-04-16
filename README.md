@@ -1,6 +1,17 @@
 # Truman State University RPE Tracker
 
-A full-stack application for tracking Rate of Perceived Exertion (RPE) data for Truman State University athletics. This tool helps athletes submit their workout RPE scores and provides coaches with dashboards to monitor team performance.
+A full-stack application for tracking Rate of Perceived Exertion (RPE) data for Truman State University athletics.
+
+---
+
+## 👨‍💻 Authors
+
+Developed for **Truman State University Athletics** by:
+
+- [Mason Crim](https://github.com/MasonC13) – Lead Developer & API Architect
+- [Nadine Thomas](https://github.com/Nadine-Thomas) – Frontend Engineer & UI/UX Designer
+- [Kacie Myers](https://github.com/kaciemyers23) – QA Engineer & Technical Documentation  
+- [Grace Lovell](https://github.com/grace-lovell) – Server Integration Engineer
 
 ---
 
@@ -202,16 +213,5 @@ PDF reports include:
 - Team and position statistics  
 - Individual workload tracking  
 - Acute:Chronic workload ratio alerts   
-
----
-
-## 👨‍💻 Authors
-
-Developed for **Truman State University Athletics** by:
-
-- [Mason Crim](https://github.com/MasonC13) – Lead Developer & API Architect
-- [Nadine Thomas](https://github.com/Nadine-Thomas) – Frontend Engineer & UI/UX Designer
-- [Kacie Myers](https://github.com/kaciemyers23) – QA Engineer & Technical Documentation  
-- [Grace Lovell](https://github.com/grace-lovell) – Server Integration Engineer
 
 ---
