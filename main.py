@@ -1,18 +1,30 @@
-from plotly.subplots import make_subplots
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
+import pandas as pd
+import os
+from datetime import datetime, timedelta
+import numpy as np
 import json
+from io import StringIO
+
+# Dashboard imports
 import dash
 from dash import html, dcc, dash_table
 from dash.dependencies import Input, Output, State
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
-import pandas as pd
-import numpy as np
 import dash_bootstrap_components as dbc
-from emailNotif import send_email
-from pythonCSV import get_data_from_csv
-from io import StringIO
-from coachReport import generate_coach_report
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.serving import run_simple
+
+# Import other modules
+try:
+    from emailNotif import send_email
+    from coachReport import generate_coach_report
+    email_module_available = True
+except ImportError:
+    email_module_available = False
+    print("Email notification modules not available. Email features will be disabled.")
 
 # Truman State University Colors
 TRUMAN_PURPLE = "#4F2D7F"  # Primary purple
@@ -28,9 +40,156 @@ COACH_EMAILS = [
     "mc6383@truman.edu"
 ]
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-app.config.suppress_callback_exceptions = True
-server = app.server
+# CSV file path - used by both apps
+CSV_FILE = "responses.csv"
+
+# Define base headers
+BASE_COLUMNS = [
+    "Email",
+    "Last 4 Digits",
+    "Last Name",
+    "First Name",
+    "Position",
+    "Summer Attendance"
+]
+
+# Ensure the CSV exists
+if not os.path.exists(CSV_FILE):
+    df = pd.DataFrame(columns=BASE_COLUMNS)
+    df.to_csv(CSV_FILE, index=False)
+
+# Create the Flask app
+flask_app = Flask(__name__)
+CORS(flask_app)
+
+# Create the Dash app
+dash_app = dash.Dash(
+    __name__, 
+    server=flask_app,
+    url_base_pathname='/dashboard/',
+    external_stylesheets=[dbc.themes.BOOTSTRAP]
+)
+dash_app.config.suppress_callback_exceptions = True
+
+# Form submission endpoint
+@flask_app.route("/submit", methods=["POST"])
+def submit_form():
+    data = request.json
+    today_str = datetime.today().strftime("%m/%d/%Y")  # e.g. 4/15/2025
+
+    # Load existing CSV
+    df = pd.read_csv(CSV_FILE)
+
+    # Add today's date column if not exists
+    if today_str not in df.columns:
+        df[today_str] = ""
+
+    # Check if user already exists (by email)
+    email = data.get("email")
+    user_index = df[df["Email"] == email].index
+
+    if len(user_index) > 0:
+        # Update existing row with intensity level
+        idx = user_index[0]
+        df.at[idx, today_str] = data.get("intensityLevel")  # Store intensity level for today
+    else:
+        # Create new row with intensity level
+        new_row = {
+            "Email": data.get("email"),
+            "Last 4 Digits": data.get("last4"),
+            "Last Name": data.get("lastName"),
+            "First Name": data.get("firstName"),
+            "Position": data.get("position"),
+            "Summer Attendance": data.get("summerAttendance"),
+            today_str: data.get("intensityLevel")  # Store intensity level for today
+        }
+
+        # Fill missing date columns
+        for col in df.columns:
+            if col not in new_row:
+                new_row[col] = ""
+
+        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+    # Reorder columns: base + dates
+    date_cols = [col for col in df.columns if col not in BASE_COLUMNS]
+    df = df[BASE_COLUMNS + sorted(date_cols, key=lambda x: datetime.strptime(x, "%m/%d/%Y"))]
+
+    df.to_csv(CSV_FILE, index=False)
+    return jsonify({"message": "Data saved successfully"}), 200
+
+# Redirect root to dashboard
+@flask_app.route("/")
+def index():
+    return flask_app.redirect("/dashboard/")
+
+# Function to get data from CSV (moved from pythonCSV.py)
+def get_data_from_csv():
+    try:
+        # Read the CSV file
+        df = pd.read_csv(CSV_FILE)
+        
+        # Create Name field from first and last name if needed
+        if 'First Name' in df.columns and 'Last Name' in df.columns and 'Name' not in df.columns:
+            df['Name'] = df['First Name'] + ' ' + df['Last Name']
+            
+        # Identify base columns and date columns
+        base_columns = [col for col in df.columns if col in BASE_COLUMNS or col == 'Name']
+        date_columns = [col for col in df.columns if col not in base_columns]
+        
+        # Restructure data for time series analysis
+        restructured_data = []
+        
+        for _, row in df.iterrows():
+            athlete_name = row.get('Name', '') or f"{row.get('First Name', '')} {row.get('Last Name', '')}"
+            position = row.get('Position', '')
+            email = row.get('Email', '')
+            
+            for date_col in date_columns:
+                value = row[date_col]
+                # Skip empty values
+                if pd.notna(value) and str(value).strip() != '':
+                    # Make sure value is numeric
+                    try:
+                        if isinstance(value, str):
+                            clean_value = ''.join(c for c in value if c.isdigit() or c == '.')
+                            numeric_value = float(clean_value) if clean_value else None
+                        else:
+                            numeric_value = float(value)
+                            
+                        # Cap values at reasonable RPE max (10)
+                        if numeric_value is not None:
+                            if numeric_value > 100:
+                                numeric_value = numeric_value / 100
+                            elif numeric_value > 10:
+                                numeric_value = numeric_value / 10
+                            
+                            # Final cap at 10
+                            numeric_value = min(numeric_value, 10.0)
+                            
+                            restructured_data.append({
+                                'Name': athlete_name,
+                                'Position': position,
+                                'Email': email,
+                                'Date': date_col,
+                                'Value': numeric_value
+                            })
+                    except (ValueError, TypeError):
+                        continue
+        
+        # Create dataframe from restructured data
+        df_long = pd.DataFrame(restructured_data)
+        
+        # Convert dates to datetime
+        df_long['Date'] = pd.to_datetime(df_long['Date'], format="%m/%d/%Y", errors='coerce')
+        
+        # Calculate daily position averages
+        df_position_daily_avg = df_long.groupby(['Date', 'Position'])['Value'].mean().reset_index()
+        
+        return df, df_long, df_position_daily_avg
+    except Exception as e:
+        print(f"Error reading CSV: {str(e)}")
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 # Define the tabs with Truman colors
 tabs = dbc.Tabs(
@@ -72,7 +231,7 @@ tabs = dbc.Tabs(
 )
 
 # Define the layout with Truman State University styling
-app.layout = html.Div([
+dash_app.layout = html.Div([
     # Header with Truman styling
     html.Div([
         html.H1('Truman State Bulldogs - RPE', 
@@ -132,7 +291,7 @@ app.layout = html.Div([
 ], style={'fontFamily': 'Arial, sans-serif'})
 
 # Callback to update the tab content based on the active tab
-@app.callback(
+@dash_app.callback(
     Output("tab-content", "children"),
     [Input("dashboard-tabs", "active_tab"),
      Input("data-store", "children")]
@@ -445,7 +604,7 @@ def render_notifications_tab():
     ])
 
 # Callback to refresh data
-@app.callback(
+@dash_app.callback(
     [Output('data-store', 'children'),
      Output('last-update', 'children')],
     [Input('refresh-data-btn', 'n_clicks')]
@@ -453,143 +612,47 @@ def render_notifications_tab():
 def refresh_data(n_clicks):
     df, df_long, df_position_daily_avg = get_data_from_csv()
     
-    # Add debug output to help diagnose data issues
-    print("DataFrame columns:", df.columns.tolist())
-    
     # Create Name field from first and last name if needed
     if 'First Name' in df.columns and 'Last Name' in df.columns and 'Name' not in df.columns:
         df['Name'] = df['First Name'] + ' ' + df['Last Name']
     
     # Since you mentioned you have date columns after specific fields,
     # let's identify and process those date columns
-    base_columns = ['Email', 'Last 4 digits', 'Last Name', 'First Name', 'Position', 'Summer Attendance', 'Name']
+    base_columns = ['Email', 'Last 4 Digits', 'Last Name', 'First Name', 'Position', 'Summer Attendance', 'Name']
     potential_date_columns = [col for col in df.columns if col not in base_columns]
     
-    # We need to restructure the data for time series analysis if we have date columns
-    if potential_date_columns and 'Position' in df.columns and 'Name' in df.columns:
-        print(f"Found {len(potential_date_columns)} potential date columns")
-        
-        # Create a new DataFrame to hold the restructured data
-        restructured_data = []
-        
-        for _, row in df.iterrows():
-            athlete_name = row['Name']
-            position = row['Position']
-            email = row['Email'] if 'Email' in df.columns else None
+    # Calculate average value per athlete (make sure values are numeric)
+    numeric_date_columns = []
+    for col in potential_date_columns:
+        # Check if column contains numeric data
+        try:
+            # Convert to numeric and handle errors
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            numeric_date_columns.append(col)
+        except:
+            print(f"Column {col} could not be converted to numeric")
+    
+    # Only use numeric columns for average calculation
+    if numeric_date_columns:
+        df['Average Value'] = df[numeric_date_columns].mean(axis=1, skipna=True)
+        # Check for unreasonably high values (RPE is typically 0-10)
+        if df['Average Value'].max() > 10:
+            print(f"Warning: Found unusually high average values. Max value: {df['Average Value'].max()}")
+            # Scale down values based on their magnitude
+            if (df['Average Value'] > 100).any():
+                # Values over 100 get divided by 100
+                df.loc[df['Average Value'] > 100, 'Average Value'] = df.loc[df['Average Value'] > 100, 'Average Value'] / 100
             
-            for date_col in potential_date_columns:
-                value = row[date_col]
-                # Skip empty values
-                if pd.notna(value) and value != '':
-                    # Make sure value is numeric - convert if needed
-                    try:
-                        # If value is a string with formatting, clean it and convert to float
-                        if isinstance(value, str):
-                            # Remove any non-numeric characters except decimal point
-                            clean_value = ''.join(c for c in value if c.isdigit() or c == '.')
-                            numeric_value = float(clean_value) if clean_value else None
-                        else:
-                            numeric_value = float(value)
-                            
-                        # RPE values should typically be between 0-10
-                        # If value is over 10, it might need adjustment
-                        if numeric_value and numeric_value > 10:
-                            # Try to determine appropriate scaling factor
-                            if numeric_value > 100:
-                                numeric_value = numeric_value / 100
-                            elif numeric_value > 10:
-                                numeric_value = numeric_value / 10
-                                
-                        # Final sanity check - cap at maximum reasonable RPE (10)
-                        if numeric_value and numeric_value > 10:
-                            numeric_value = 10.0
-                            
-                        restructured_data.append({
-                            'Name': athlete_name,
-                            'Position': position,
-                            'Email': email,
-                            'Date': date_col,  # The column name is the date
-                            'Value': numeric_value
-                        })
-                    except (ValueError, TypeError):
-                        # If conversion fails, skip this value
-                        print(f"Could not convert value '{value}' to number for {athlete_name} on {date_col}")
-                        continue
-        
-        # Create a new dataframe with the restructured data
-        df_long = pd.DataFrame(restructured_data)
-        
-        # Try to convert the date column names to actual dates
-        df_long['Date'] = pd.to_datetime(df_long['Date'], format="%m/%d/%Y", errors='coerce')
-        
-        # Calculate daily position averages
-        df_position_daily_avg = df_long.groupby(['Date', 'Position'])['Value'].mean().reset_index()
-        
-        # Calculate average value per athlete (make sure values are numeric)
-        numeric_date_columns = []
-        for col in potential_date_columns:
-            # Check if column contains numeric data
-            try:
-                # Convert to numeric and handle errors
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-                numeric_date_columns.append(col)
-            except:
-                print(f"Column {col} could not be converted to numeric")
-        
-        # Only use numeric columns for average calculation
-        if numeric_date_columns:
-            df['Average Value'] = df[numeric_date_columns].mean(axis=1, skipna=True)
-            # Check for unreasonably high values (RPE is typically 0-10)
-            if df['Average Value'].max() > 10:
-                print(f"Warning: Found unusually high average values. Max value: {df['Average Value'].max()}")
-                # Scale down values based on their magnitude
-                too_high_mask = df['Average Value'] > 10
-                
-                if (df['Average Value'] > 100).any():
-                    # Values over 100 get divided by 100
-                    df.loc[df['Average Value'] > 100, 'Average Value'] = df.loc[df['Average Value'] > 100, 'Average Value'] / 100
-                
-                if (df['Average Value'] > 10).any():
-                    # Values between 10 and 100 get divided by 10
-                    df.loc[df['Average Value'] > 10, 'Average Value'] = df.loc[df['Average Value'] > 10, 'Average Value'] / 10
-                
-                # Final safety check - cap at 10
-                df.loc[df['Average Value'] > 10, 'Average Value'] = 10.0
+            if (df['Average Value'] > 10).any():
+                # Values between 10 and 100 get divided by 10
+                df.loc[df['Average Value'] > 10, 'Average Value'] = df.loc[df['Average Value'] > 10, 'Average Value'] / 10
+            
+            # Final safety check - cap at 10
+            df.loc[df['Average Value'] > 10, 'Average Value'] = 10.0
     
     # Ensure dates are properly parsed
     if df_position_daily_avg is not None and 'Date' in df_position_daily_avg.columns:
         df_position_daily_avg['Date'] = pd.to_datetime(df_position_daily_avg['Date'], errors='coerce')
-    
-    # Calculate trend indicators
-    trends = []
-    flagged_athletes = pd.DataFrame()
-    
-    if 'Name' in df.columns and 'Position' in df.columns and 'Average Value' in df.columns:
-        # Instead of using date-based trends, we'll use the average value
-        for name, group in df.groupby('Name'):
-            if pd.notna(group['Average Value'].iloc[0]):
-                trend = "stable"
-                latest_value = group['Average Value'].iloc[0]
-                
-                # Assume trends based on the value itself
-                if latest_value > 7:  # High values considered "improving"
-                    trend = "improving"
-                elif latest_value < 5:  # Low values considered "declining"
-                    trend = "declining"
-                    
-                trends.append({
-                    'Name': name,
-                    'Position': group['Position'].iloc[0],
-                    'Trend': trend,
-                    'LatestValue': latest_value
-                })
-        
-        df_trends = pd.DataFrame(trends)
-        # Flag athletes with concerning values
-        flagged_athletes = df_trends[
-            (df_trends['Trend'] == 'declining') & 
-            (df_trends['LatestValue'] < 5)  # Athletes with very low values
-        ]
     
     # Create JSON data structure for storage
     data_json = {
@@ -632,11 +695,6 @@ def refresh_data(n_clicks):
         # Create empty dataframe with expected structure
         data_json['df_position_daily_avg'] = pd.DataFrame(columns=['Date', 'Position', 'Value']).to_json(orient='split')
     
-    # Add trends data if available
-    if len(trends) > 0:
-        data_json['df_trends'] = pd.DataFrame(trends).to_json(orient='split')
-        data_json['flagged_athletes'] = flagged_athletes.to_json(orient='split')
-    
     # Include column information to help with debugging
     data_json['column_info'] = {
         'df_columns': df.columns.tolist(),
@@ -649,7 +707,7 @@ def refresh_data(n_clicks):
     return json.dumps(data_json), last_update_text
 
 # Add new callbacks for the position filter and individual player data
-@app.callback(
+@dash_app.callback(
     [Output('position-avg-graph', 'figure'),
      Output('position-time-graph', 'figure'),
      Output('weekly-change-table', 'data'),
@@ -819,7 +877,7 @@ def update_filtered_graphs(selected_positions, json_data):
             filtered_players = df[df['Position'].isin(selected_positions)]
             
             # Reconstruct time series from date columns
-            base_columns = ['Email', 'Last 4 digits', 'Last Name', 'First Name', 'Position', 'Summer Attendance', 'Name', 'Average Value']
+            base_columns = ['Email', 'Last 4 Digits', 'Last Name', 'First Name', 'Position', 'Summer Attendance', 'Name', 'Average Value']
             date_columns = [col for col in df.columns if col not in base_columns]
             
             for _, player in filtered_players.iterrows():
@@ -930,7 +988,7 @@ def update_filtered_graphs(selected_positions, json_data):
     return bar_fig, line_fig, weekly_change_data, player_fig
 
 # Callback for email notifications
-@app.callback(
+@dash_app.callback(
     Output('email-status', 'children'),
     [Input('send-reminders-btn', 'n_clicks')],
     [State('data-store', 'children')]
@@ -953,6 +1011,10 @@ def send_reminders(n_clicks, json_data):
     if 'Email' not in df.columns:
         return html.Div("Error: Could not find 'Email' column in your data.", 
                         style={'color': 'red', 'fontWeight': 'bold', 'padding': '10px'})
+
+    if not email_module_available:
+        return html.Div("Email notification module is not available. Please ensure emailNotif.py is properly set up.", 
+                       style={'color': 'red', 'fontWeight': 'bold', 'padding': '10px'})
 
     # Filter out any rows where the email is blank or None
     valid_emails = df["Email"].dropna().unique()
@@ -999,7 +1061,7 @@ def send_reminders(n_clicks, json_data):
     })
 
 # Add a new callback for coach report generation with hardcoded emails
-@app.callback(
+@dash_app.callback(
     Output('coach-report-status', 'children'),
     [Input('send-coach-reports-btn', 'n_clicks')],
     [State('data-store', 'children')]
@@ -1013,6 +1075,10 @@ def send_coach_performance_reports(n_clicks, json_data):
             "Please refresh data before generating reports.", 
             style={'color': 'red', 'fontWeight': 'bold', 'padding': '10px'}
         )
+    
+    if not email_module_available:
+        return html.Div("Email and report modules are not available. Please ensure coachReport.py is properly set up.", 
+                       style={'color': 'red', 'fontWeight': 'bold', 'padding': '10px'})
     
     # Use the hardcoded coach emails
     selected_coaches = COACH_EMAILS
@@ -1057,4 +1123,6 @@ def send_coach_performance_reports(n_clicks, json_data):
         )
 
 if __name__ == '__main__':
-    app.run(debug=True, port=4026)
+    # Run the Flask app on port 4025 (originally used by your form submission server)
+    # The dashboard will be accessible at http://127.0.0.1:4025/dashboard/
+    flask_app.run(debug=True, port=4025)
