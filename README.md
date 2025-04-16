@@ -8,29 +8,40 @@ This application allows:
 - **Athletes** to submit their RPE (Rate of Perceived Exertion) data after workouts
 - **Coaches/Trainers** to view aggregated RPE data with interactive visualizations
 - **Password protection** for the coaching staff dashboard
-- **Data persistence** through CSV storage
+- **Data manipulation** through CSV storage
+- **Email notifications** for athletes and coaches
+- **PDF report generation** for coaching staff
 
 ## 🔧 Technologies
 
 ### Frontend
-- React.js
-- React Router for navigation
-- Custom CSS styling with Truman State University branding
+- **React.js** - Component-based UI library for building the user interface
+- **React Router DOM** - For navigation between different views/pages
+- **React Hook Form** - Form validation and submission handling
+- **Custom CSS** - Styling with Truman State University brand colors
 
 ### Backend
-- Python Flask server
-- Dash for interactive data visualizations
-- Pandas for data processing
-- CSV file storage
+- **Python Flask** - Web server framework handling REST API endpoints and serving the dashboard
+- **Pandas** - Data manipulation and analysis for RPE data
+- **Dash** - Interactive visualization framework built on Plotly
+- **Plotly Express & Graph Objects** - Creating interactive charts and visualizations
+- **ReportLab** - PDF generation for coach reports
+- **SMTP Library** - Email notifications via `smtplib` and MIME components
+- **NumPy** - Numerical operations on RPE data
+- **Dash Bootstrap Components** - UI components for dashboard styling
 
-## 🏗️ Architecture
+## 💾 Data Storage
 
-The application follows a client-server architecture:
+The application uses a CSV-based database system for data persistence. This approach provides:
 
-1. **React Frontend** - Handles user interface and form submission
-2. **Flask Backend** - Processes data and serves the dashboard
-   - `/submit` endpoint receives RPE form submissions
-   - `/dashboard` serves the interactive Dash visualization application
+- Simple yet effective data storage without requiring a database server setup
+- Easy portability - the entire database can be viewed in spreadsheet applications
+- Straightforward backup and version control
+- Direct integration with pandas for data analysis
+
+The database structure includes:
+- Base columns: Email, Last 4 Digits, Last Name, First Name, Position, Summer Attendance
+- Dynamic date columns: Each date gets its own column with RPE values for that day
 
 ## 🚀 Features
 
@@ -44,6 +55,11 @@ The application follows a client-server architecture:
   - Individual athlete performance tracking
   - Week-over-week change metrics
 - **Email notifications** for athletes and coaches
+- **PDF report generation** with:
+  - Team overview statistics
+  - Position analysis
+  - Acute:Chronic workload ratio monitoring for injury prevention
+  - Customized branding with Truman State University colors
 
 ## 📦 Installation
 
@@ -70,6 +86,24 @@ npm install
 ```bash
 cd ../backend
 pip install -r requirements.txt
+```
+
+4. Create a `credentials.json` file for email functionality:
+```json
+{
+  "email_settings": {
+    "smtp_server": "smtp.example.com",
+    "smtp_port": 587,
+    "sender_email": "your-email@example.com",
+    "sender_password": "your-password"
+  }
+}
+```
+5. Create a new file named responses.csv in the backend directory:
+```csv
+Add the following header row to set up the database structure:
+
+Email, Last 4 Digits, Last Name, First Name, Position, Summer Attendance
 ```
 
 ## 🏃‍♂️ Running the Application
@@ -100,14 +134,16 @@ truman-rpe-tracker/
 │   │   ├── HomePage.jsx       # Landing page with role selection
 │   │   ├── MyForm.jsx         # Athlete RPE submission form
 │   │   ├── ReportPage.jsx     # Coach dashboard wrapper
-│   │   └── ...
+│   │   └── index.css          # Global styles with Truman colors
 │   └── ...
 │
 ├── backend/                   # Flask server and Dash application
-│   ├── main.py               # Combined Flask/Dash server
-│   ├── emailNotif.py         # Email notification functionality
-│   ├── coachReport.py        # Coach report generation
-│   └── ...
+│   ├── main.py                # Combined Flask/Dash server
+│   ├── emailNotif.py          # Email notification functionality
+│   ├── coachReport.py         # Coach report generation with ReportLab
+│   ├── pythonCSV.py           # CSV data processing utilities
+│   ├── credentials.json       # Email configuration (create this file)
+│   └── responses.csv          # Data storage file
 │
 └── README.md                  # Project documentation
 ```
@@ -117,10 +153,8 @@ truman-rpe-tracker/
 The coach/trainer dashboard is protected with a password. The default password is set in the HomePage component:
 
 ```javascript
-const COACH_PASSWORD = "bulldogs2025"; // Change this to your secure password
+const COACH_PASSWORD = "Your Password Here"; // Change this to your secure password
 ```
-
-For improved security in production, consider implementing server-side password validation.
 
 ## 📊 Dashboard
 
@@ -139,30 +173,47 @@ Coaches can filter data by position, date ranges, and specific athletes.
 2. Data is stored in a CSV file on the server
 3. The dashboard reads from the CSV and generates visualizations
 4. Coaches can access the visualizations through the protected dashboard
+5. Email notifications can be sent to remind athletes to submit data
+6. PDF reports can be generated and emailed to coaching staff
 
-## 💾 Data Storage
+## 📧 Email System
 
-Data is stored in a CSV file (`responses.csv`) with the following structure:
-- Base columns: Email, Last 4 Digits, Last Name, First Name, Position, Summer Attendance
-- Dynamic date columns: Each date gets its own column with RPE values for that date
+The application includes an email notification system that can:
+- Send reminders to athletes to complete their RPE submissions
+- Send PDF reports to coaches with team performance metrics
+- Include visualizations of RPE trends
+- Track email delivery success/failure
+
+To use this functionality, create a `credentials.json` file with your SMTP server details.
+
+## 📑 PDF Reports
+
+Coaches can generate comprehensive PDF reports with:
+- Team overview statistics
+- Position-by-position analysis
+- Athletes with high acute:chronic workload ratios (injury risk monitoring)
+- Truman State University branding and styling
 
 ## 🛠️ Customization
 
 - Update Truman State University colors in `index.css`
 - Modify the dashboard layout in `main.py`
 - Change the coach password in `HomePage.jsx`
+- Customize email templates in `emailNotif.py`
+- Adjust PDF report layout in `coachReport.py`
 
 ## 📝 License
 
 [MIT License](LICENSE)
 
-## 👥 Contributing
+## 👨‍💻 Authors
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+This project was developed by:
 
-## 📧 Contact
-
-For questions or support, please contact [your-email@truman.edu](mailto:your-email@truman.edu).
+- **[Mason Crim]** - *Backend Developer* - [GitHub Profile URL]
+- **[Nadine Thomas]** - *Frontend Developer* - [GitHub Profile URL]
+- **[Kacie Myers]** - *Frontend Developer* - [GitHub Profile URL]
+- **[Grace Lovell]** - *Data Visualization* - [GitHub Profile URL]
 
 ---
 
