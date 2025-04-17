@@ -100,7 +100,7 @@ const MyForm = () => {
                         <div className="field-group">
                             {/* Email field with @truman.edu suffix */}
                             <div className="field">
-                                <label className="field-label">Truman Email Address</label>
+                                <label className="field-label">Truman Email Address (Only Enter Beginning of Email)</label>
                                 <div style={{ display: 'flex', alignItems: 'center' }}>
                                     <input
                                         {...register("emailPrefix", {
