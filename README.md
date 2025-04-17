@@ -1,6 +1,6 @@
 # Truman State University RPE Tracker
 
-A full-stack application for tracking Rate of Perceived Exertion (RPE) data for Truman State University athletics. Based on this study https://pmc.ncbi.nlm.nih.gov/articles/PMC9205558/pdf/i1938-162X-57-5-470.pdf
+A full-stack application for tracking Rate of Perceived Exertion (RPE) data for Truman State University athletics.
 
 ---
 
