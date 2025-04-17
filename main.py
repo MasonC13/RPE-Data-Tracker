@@ -348,6 +348,10 @@ def render_tab_content(active_tab, json_data):
     return html.Div("This tab's content is being developed.")
 
 def render_csv_tab(df):
+    # Drop columns you don't want to display
+    columns_to_hide = ["Email", "Last 4 Digits", "Summer Attendance", "Position"]
+    df_filtered = df.drop(columns=[col for col in columns_to_hide if col in df.columns])
+
     return html.Div([
         html.H3("Full CSV Data Table", style={
             'color': TRUMAN_PURPLE,
@@ -377,8 +381,8 @@ def render_csv_tab(df):
 
         dash_table.DataTable(
             id='csv-data-table',
-            columns=[{"name": i, "id": i} for i in df.columns],
-            data=df.to_dict('records'),
+            columns=[{"name": i, "id": i} for i in df_filtered.columns],
+            data=df_filtered.to_dict('records'),
             page_size=20,
             style_table={
                 'overflowX': 'auto',
