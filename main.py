@@ -209,6 +209,22 @@ tabs = dbc.Tabs(
                 "border-color": TRUMAN_LIGHT_BLUE
             }
         ),
+
+        dbc.Tab(
+    label="CSV", 
+    tab_id="tab-csv",
+    label_style={
+        "background-color": TRUMAN_PURPLE, 
+        "color": TRUMAN_WHITE,
+        "border-color": TRUMAN_PURPLE,
+        "font-weight": "bold"
+    },
+    active_label_style={
+        "background-color": TRUMAN_LIGHT_BLUE,
+        "color": TRUMAN_WHITE,
+        "border-color": TRUMAN_LIGHT_BLUE
+    }
+),
         dbc.Tab(
             label="Notifications", 
             tab_id="tab-notifications",
@@ -325,8 +341,46 @@ def render_tab_content(active_tab, json_data):
         return render_overview_tab(df_position_avg, df_position_daily_avg)
     elif active_tab == "tab-notifications":
         return render_notifications_tab()
+    elif active_tab == "tab-csv":
+        return render_csv_tab(df)
+
     
     return html.Div("This tab's content is being developed.")
+
+def render_csv_tab(df):
+    return html.Div([
+        html.H3("Full CSV Data Table", style={
+            'color': TRUMAN_PURPLE,
+            'fontWeight': 'bold',
+            'marginBottom': '20px',
+            'textAlign': 'center'
+        }),
+        dash_table.DataTable(
+            id='csv-data-table',
+            columns=[{"name": i, "id": i} for i in df.columns],
+            data=df.to_dict('records'),
+            page_size=20,
+            style_table={
+                'overflowX': 'auto',
+                'border': f'1px solid {TRUMAN_PURPLE}'
+            },
+            style_header={
+                'backgroundColor': TRUMAN_PURPLE_LIGHT,
+                'color': 'white',
+                'fontWeight': 'bold'
+            },
+            style_cell={
+                'textAlign': 'center',
+                'backgroundColor': TRUMAN_WHITE,
+                'color': TRUMAN_PURPLE,
+                'minWidth': '100px',
+                'whiteSpace': 'normal'
+            },
+            sort_action="native",
+            filter_action="native",
+            fixed_rows={'headers': True}
+        )
+    ])
 
 def render_overview_tab(df_position_avg, df_position_daily_avg):
     # Check if we have date values to calculate week-over-week changes
