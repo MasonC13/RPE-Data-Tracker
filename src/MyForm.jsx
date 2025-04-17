@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 
 const MyForm = () => {
     const {
-        register, 
+        register,
         handleSubmit,
         formState: { errors },
     } = useForm();
@@ -12,16 +12,22 @@ const MyForm = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const onSubmit = async (data) => {
+    const onSubmit = async (formData) => {
         setLoading(true);
         setError("");
+
+        const fullData = {
+            ...formData,
+            email: `${formData.emailPrefix}@truman.edu`
+        };
+
         try {
             const response = await fetch("http://127.0.0.1:4025/submit", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
+                body: JSON.stringify(fullData),
             });
-    
+
             if (response.ok) {
                 setSubmitted(true);
             } else {
@@ -73,7 +79,7 @@ const MyForm = () => {
                         Today: {new Date().toLocaleDateString()}
                     </div>
                 </div>
-                
+
                 <div className="form-card">
                     <div className="form-card-header">
                         <h1 className="form-title">
@@ -83,114 +89,45 @@ const MyForm = () => {
                             Truman State University Athletics
                         </div>
                     </div>
-                    
+
                     <form onSubmit={handleSubmit(onSubmit)} className="form-body">
                         {error && (
                             <div className="error-message">
                                 {error}
                             </div>
                         )}
-                    
-                        {/* Stack all fields vertically */}
+
                         <div className="field-group">
-                            {/* First Name */}
+                            {/* Email field with @truman.edu suffix */}
                             <div className="field">
-                                <label className="field-label">First Name</label>
-                                <input
-                                    {...register("firstName", { required: "First name is required" })}
-                                    className="field-input"
-                                    placeholder="Your first name"
-                                />
-                                {errors.firstName && <p className="field-error">{errors.firstName.message}</p>}
+                                <label className="field-label">Truman Email Address</label>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <input
+                                        {...register("emailPrefix", {
+                                            required: "Email is required",
+                                            pattern: {
+                                                value: /^[a-zA-Z0-9._%+-]+$/,
+                                                message: "Invalid format before @truman.edu"
+                                            }
+                                        })}
+                                        className="field-input"
+                                        placeholder="jsmith"
+                                        type="text"
+                                        style={{ flex: 1 }}
+                                    />
+                                    <span style={{
+                                        marginLeft: '8px',
+                                        color: '#555',
+                                        fontWeight: 'bold',
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                        @truman.edu
+                                    </span>
+                                </div>
+                                {errors.emailPrefix && <p className="field-error">{errors.emailPrefix.message}</p>}
                             </div>
 
-                            {/* Last Name */}
-                            <div className="field">
-                                <label className="field-label">Last Name</label>
-                                <input
-                                    {...register("lastName", { required: "Last name is required" })}
-                                    className="field-input"
-                                    placeholder="Your last name"
-                                />
-                                {errors.lastName && <p className="field-error">{errors.lastName.message}</p>}
-                            </div>
-                            
-                            {/* Email */}
-                            <div className="field">
-                                <label className="field-label">Email Address</label>
-                                <input
-                                    {...register("email", { 
-                                        required: "Email is required", 
-                                        pattern: { 
-                                            value: /\S+@\S+\.\S+/, 
-                                            message: "Please enter a valid email" 
-                                        }
-                                    })}
-                                    className="field-input"
-                                    placeholder="your.email@example.com"
-                                    type="email"
-                                />
-                                {errors.email && <p className="field-error">{errors.email.message}</p>}
-                            </div>
-
-                            {/* Last 4 Digits */}
-                            <div className="field">
-                                <label className="field-label">Last 4 Digits (Phone)</label>
-                                <input
-                                    {...register("last4", { 
-                                        required: "Last 4 digits are required", 
-                                        pattern: { 
-                                            value: /^\d{4}$/, 
-                                            message: "Must be exactly 4 digits" 
-                                        }
-                                    })}
-                                    className="field-input"
-                                    placeholder="1234"
-                                    maxLength={4}
-                                    type="text"
-                                    inputMode="numeric"
-                                />
-                                {errors.last4 && <p className="field-error">{errors.last4.message}</p>}
-                            </div>
-
-                            {/* Position */}
-                            <div className="field">
-                                <label className="field-label">Position</label>
-                                <select
-                                    defaultValue=""
-                                    {...register("position", { required: "Position is required" })}
-                                    className="field-input"
-                                >
-                                    <option value="" disabled>Select position</option>
-                                    <option value="DB">DB</option>
-                                    <option value="DL">DL</option>
-                                    <option value="KPS">KPS</option>
-                                    <option value="LB">LB</option>
-                                    <option value="OL">OL</option>
-                                    <option value="QB">QB</option>
-                                    <option value="RB">RB</option>
-                                    <option value="TE">TE</option>
-                                    <option value="WR">WR</option>
-                                </select>
-                                {errors.position && <p className="field-error">{errors.position.message}</p>}
-                            </div>
-
-                            {/* Summer Attendance */}
-                            <div className="field">
-                                <label className="field-label">Summer Attendance</label>
-                                <select
-                                    defaultValue=""
-                                    {...register("summerAttendance", { required: "Please select yes or no" })}
-                                    className="field-input"
-                                >
-                                    <option value="" disabled>Select option</option>
-                                    <option value="yes">Yes</option>
-                                    <option value="no">No</option>
-                                </select>
-                                {errors.summerAttendance && <p className="field-error">{errors.summerAttendance.message}</p>}
-                            </div>
-
-                            {/* Intensity Level */}
+                            {/* RPE selection */}
                             <div className="field">
                                 <label className="field-label">Intensity Level (1-10)</label>
                                 <select
@@ -210,9 +147,7 @@ const MyForm = () => {
                                     <option value="9">9 - Very, very hard</option>
                                     <option value="10">10 - Maximum effort</option>
                                 </select>
-                                {errors.intensityLevel && 
-                                    <p className="field-error">{errors.intensityLevel.message}</p>
-                                }
+                                {errors.intensityLevel && <p className="field-error">{errors.intensityLevel.message}</p>}
                                 <div className="intensity-gradient"></div>
                                 <div className="intensity-labels">
                                     <span>Easy</span>
@@ -224,7 +159,7 @@ const MyForm = () => {
                         </div>
 
                         <div style={{ marginTop: '1.5rem' }}>
-                            <button 
+                            <button
                                 type="submit"
                                 disabled={loading}
                                 className="form-button"
@@ -242,13 +177,13 @@ const MyForm = () => {
                                 )}
                             </button>
                         </div>
-                        
+
                         <div className="info-text">
                             Your response will be recorded for {new Date().toLocaleDateString()}
                         </div>
                     </form>
                 </div>
-                
+
                 <div className="form-footer">
                     &copy; {new Date().getFullYear()} Truman State University Athletics
                 </div>
@@ -258,3 +193,5 @@ const MyForm = () => {
 };
 
 export default MyForm;
+
+
