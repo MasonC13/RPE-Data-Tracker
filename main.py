@@ -355,6 +355,26 @@ def render_csv_tab(df):
             'marginBottom': '20px',
             'textAlign': 'center'
         }),
+
+        html.Div([
+            html.Label("Search by Player Name:", style={
+                'fontWeight': 'bold',
+                'color': TRUMAN_PURPLE
+            }),
+            dcc.Input(
+                id='csv-search-input',
+                type='text',
+                placeholder='Enter player name...',
+                style={
+                    'width': '100%',
+                    'padding': '10px',
+                    'border': f'2px solid {TRUMAN_PURPLE}',
+                    'borderRadius': '5px',
+                    'marginBottom': '20px'
+                }
+            )
+        ]),
+
         dash_table.DataTable(
             id='csv-data-table',
             columns=[{"name": i, "id": i} for i in df.columns],
@@ -1175,6 +1195,29 @@ def send_coach_performance_reports(n_clicks, json_data):
             f"Error generating coach reports: {error_message}", 
             style={'color': 'red', 'fontWeight': 'bold', 'padding': '10px'}
         )
+
+@dash_app.callback(
+    Output('csv-data-table', 'data'),
+    [Input('csv-search-input', 'value'),
+     Input('data-store', 'children')]
+)
+def filter_csv_table(search_value, json_data):
+    if not json_data:
+        return []
+
+    data_dict = json.loads(json_data)
+    df = pd.read_json(StringIO(data_dict['df']), orient='split')
+
+    if search_value and search_value.strip():
+        search_value = search_value.lower()
+        if 'Name' in df.columns:
+            df = df[df['Name'].str.lower().str.contains(search_value, na=False)]
+        else:
+            df = df[df['First Name'].str.lower().str.contains(search_value, na=False) |
+                    df['Last Name'].str.lower().str.contains(search_value, na=False)]
+
+    return df.to_dict('records')
+
 
 if __name__ == '__main__':
     # Run the Flask app on port 4025 (originally used by your form submission server)
