@@ -14,11 +14,12 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_CENTER
 
-# Truman State University Colors
+# Specify Truman State Color Palette
 TRUMAN_PURPLE = (79/255, 45/255, 127/255)  # RGB for PDF
 TRUMAN_LIGHT_BLUE = (0/255, 178/255, 227/255)  # RGB for PDF
 TRUMAN_WHITE = (1, 1, 1)
 
+# Function to set performance metric report
 def generate_coach_report(df, df_position_avg, df_position_daily_avg, selected_coaches=None):
     """
     Generate and send performance reports to coaches
@@ -41,34 +42,34 @@ def generate_coach_report(df, df_position_avg, df_position_daily_avg, selected_c
     """
     print("Starting coach report generation...")
     
-    # Default coach emails - replace with actual coach emails
+    # Define coaches emails - default list
     default_coaches = [
         "head_coach@truman.edu",
         "assistant_coach@truman.edu",
         "strength_coach@truman.edu"
     ]
     
-    # Use provided coaches or default list
+    # Use emails specified in default_coaches if selected_coaches is empty
     coach_emails = selected_coaches if selected_coaches else default_coaches
     print(f"Preparing to send reports to: {coach_emails}")
     
     try:
-        # Create the PDF report
+        # Create the PDF report and provide UI feedback
         print("Creating PDF report...")
         buffer = create_pdf_report(df, df_position_avg, df_position_daily_avg)
         print("PDF report created successfully")
         
-        # Skip graph creation since it's causing issues
+        # Graph creation is skipped in current implementation
         print("Skipping graph creation to avoid errors")
         
-        # Track success/failure
+        # Success/Failure count for trainers understanding and error handling
         success_count = 0
         fail_count = 0
         
-        # Generate email content
+        # Get today's date for the report
         today = datetime.now().strftime('%B %d, %Y')
         
-        # Apply scaling to average values if needed
+        # Apply scaling to average values if outliers are present
         if 'Average Value' in df.columns:
             df_scaled = df.copy()
             
@@ -86,13 +87,16 @@ def generate_coach_report(df, df_position_avg, df_position_daily_avg, selected_c
                 mask_10 = (df_scaled['Average Value'] > 10) & (df_scaled['Average Value'] <= 100)
                 df_scaled.loc[mask_10, 'Average Value'] = df_scaled.loc[mask_10, 'Average Value'] / 10
                 
-                # Cap at 10
+                # Set cap at 10
                 df_scaled.loc[df_scaled['Average Value'] > 10, 'Average Value'] = 10.0
-            
+
+            # Find the team average and set it to 0 if no data is present
             team_avg = df_scaled['Average Value'].mean()
         else:
             team_avg = 0
         
+        # Email subject and message for coaching staff
+        # Call for team average and athlete count
         email_subject = f"Truman Bulldogs - Performance Report {today}"
         email_message = f"""
 Hello Coach,
@@ -104,7 +108,7 @@ QUICK SUMMARY:
 - {len(df)} athletes tracked
 - Data collected from {len([col for col in df.columns if col not in ['Email', 'Last 4 digits', 'Last Name', 'First Name', 'Position', 'Summer Attendance', 'Name', 'Average Value']])} workout sessions
 
-The report includes a special section highlighting athletes with high acute:chronic workload ratios (>1.5), which may indicate increased injury risk.
+The report includes a special section highlighting athletes with high acute:chronic workload ratios (>1.35), which may indicate increased injury risk. The A:C ratio now compares the last 7 days of workload to the last 28 days for a more accurate measurement of injury risk.
 
 The full report is attached as a PDF with detailed breakdowns by position and individual athletes.
 
@@ -114,6 +118,8 @@ Truman State Coaching Staff
         
         # Send emails to coaches
         print("Sending emails to coaches...")
+
+        # Loop through each specificed coach email and send the report
         for email in coach_emails:
             try:
                 success = send_email_with_pdf(
@@ -122,7 +128,9 @@ Truman State Coaching Staff
                     message=email_message,
                     pdf_buffer=buffer
                 )
-                
+                # Error handling for trainer understanding
+                # If the email was sent successfully, increment success count
+                # If the email failed to send, increment fail count
                 if success:
                     success_count += 1
                     print(f"Successfully sent email to {email}")
@@ -134,7 +142,7 @@ Truman State Coaching Staff
                 import traceback
                 traceback.print_exc()
                 fail_count += 1
-        
+        # Produce summary of success and failure counts
         return {
             "success_count": success_count,
             "fail_count": fail_count,
@@ -151,11 +159,12 @@ Truman State Coaching Staff
             "message": f"Failed to generate coach reports: {str(e)}"
         }
 
+# Future implementation could include a graph of the data *not currently implemented*
 def send_email_with_pdf(recipient, subject, message, pdf_buffer):
     """Send email with PDF report attached"""
     
     try:
-        # Load credentials
+        # Load credentials file
         with open("credentials.json", "r") as file:
             creds_data = json.load(file)
         
@@ -169,7 +178,7 @@ def send_email_with_pdf(recipient, subject, message, pdf_buffer):
             print(f"Missing key in email settings: {e}")
             return False
 
-        # Safety check
+        # Error check for credentials file setup
         if not SENDER_EMAIL or not SENDER_PASSWORD:
             print("Email or password is not set in credentials.json. Skipping email.")
             return False
@@ -189,7 +198,7 @@ def send_email_with_pdf(recipient, subject, message, pdf_buffer):
         pdf_attachment.add_header('Content-Disposition', 'attachment', filename="TrumanBulldogs_Report.pdf")
         msg.attach(pdf_attachment)
         
-        # Connect to server and send
+        # Connect to SMTP server and send
         print(f"Connecting to SMTP server: {SMTP_SERVER}:{SMTP_PORT}")
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
@@ -208,14 +217,16 @@ def send_email_with_pdf(recipient, subject, message, pdf_buffer):
         traceback.print_exc()
         return False
 
+# Function to calculate acute:chronic workload ratio
 def calculate_acute_chronic_ratio(df):
     """
     Calculate acute:chronic workload ratio for each athlete
     
     Acute = average of last 7 days
-    Chronic = overall average
+    Chronic = average of last 28 days (rolling window)
+    Trend = comparison of latest value to previous 7-day average
     
-    Returns a DataFrame with athlete information and A:C ratios
+    Returns a DataFrame with athlete information, A:C ratios, and trends
     """
     try:
         print("Calculating acute:chronic workload ratios...")
@@ -228,14 +239,15 @@ def calculate_acute_chronic_ratio(df):
         # Create a copy to avoid modifying the original
         df_copy = df.copy()
         
-        # Get date columns
+        # Get date columns - filter out unnamed columns
         base_columns = ['Email', 'Last 4 digits', 'Last Name', 'First Name', 'Position', 'Summer Attendance', 'Name', 'Average Value']
-        date_columns = [col for col in df_copy.columns if col not in base_columns]
+        date_columns = [col for col in df_copy.columns 
+                       if col not in base_columns and not col.lower().startswith('unnamed')]
         
         # Sort date columns by date
         date_columns.sort(key=lambda x: pd.to_datetime(x, errors='coerce'))
         
-        # For each athlete, calculate acute (last 7 days) and chronic (all-time) workload
+        # For each athlete, calculate acute (last 7 days) and chronic (last 28 days) workload
         result_data = []
         
         for _, row in df_copy.iterrows():
@@ -257,7 +269,7 @@ def calculate_acute_chronic_ratio(df):
                             value = float(value) if value else None
                         else:
                             value = float(value)
-                            
+                        # Value scaling for outliers    
                         if value is not None:
                             # Scale values outside normal RPE range
                             if value > 1000:
@@ -279,18 +291,35 @@ def calculate_acute_chronic_ratio(df):
             # Sort values by date
             values.sort(key=lambda x: pd.to_datetime(x[0], errors='coerce'))
             
-            # Get just the values
-            just_values = [v[1] for v in values]
-            
-            # Calculate chronic workload (all-time average)
-            chronic = sum(just_values) / len(just_values) if just_values else 0
+            # Get all RPE values
+            total_values = [v[1] for v in values]
             
             # Calculate acute workload (last 7 days average)
-            last_7_values = just_values[-7:] if len(just_values) >= 7 else just_values
+            last_7_values = total_values[-7:] if len(total_values) >= 7 else total_values
             acute = sum(last_7_values) / len(last_7_values) if last_7_values else 0
+            
+            # Calculate chronic workload (last 28 days average)
+            last_28_values = total_values[-28:] if len(total_values) >= 28 else total_values
+            chronic = sum(last_28_values) / len(last_28_values) if last_28_values else 0
             
             # Calculate A:C ratio
             ac_ratio = acute / chronic if chronic > 0 else 0
+            
+            # Calculate trend (comparing most recent value to previous week average)
+            # If only one data point exists, trend is "neutral"
+            trend = "neutral"
+            latest_value = total_values[-1] if total_values else 0
+            
+            if len(total_values) > 1:
+                # Get the average of previous 7 days, excluding most recent
+                prev_values = total_values[-8:-1] if len(total_values) >= 8 else total_values[:-1]
+                prev_avg = sum(prev_values) / len(prev_values) if prev_values else 0
+                
+                # Determine trend (using 5% threshold for significance)
+                if latest_value > prev_avg * 1.05:
+                    trend = "increasing"
+                elif latest_value < prev_avg * 0.95:
+                    trend = "decreasing"
             
             result_data.append({
                 'Last Name': last_name,
@@ -298,7 +327,8 @@ def calculate_acute_chronic_ratio(df):
                 'Acute': acute,
                 'Chronic': chronic,
                 'A:C Ratio': ac_ratio,
-                'Latest RPE': just_values[-1] if just_values else 0
+                'Latest RPE': total_values[-1] if total_values else 0,
+                'Trend': trend
             })
         
         ac_df = pd.DataFrame(result_data)
@@ -420,17 +450,35 @@ def create_pdf_report(df, df_position_avg, df_position_daily_avg):
         
         # Calculate team stats
         team_avg = df_scaled['Average Value'].mean() if 'Average Value' in df_scaled.columns else 0
-        workout_dates = [col for col in df.columns if col not in ['Email', 'Last 4 digits', 'Last Name', 'First Name', 'Position', 'Summer Attendance', 'Name', 'Average Value']]
+        
+        # Filter workout date columns - exclude 'unnamed' columns and other non-date columns
+        workout_dates = [col for col in df.columns 
+                        if col not in ['Email', 'Last 4 digits', 'Last Name', 'First Name', 'Position', 'Summer Attendance', 'Name', 'Average Value'] 
+                        and not col.lower().startswith('unnamed')]
+        
         num_workouts = len(workout_dates)
         num_athletes = len(df)
         
         # Team stats table
+        # Format the latest workout date if it exists
+        latest_date = "N/A"
+        if workout_dates:
+            try:
+                # Try to parse as a date for proper formatting
+                date_obj = pd.to_datetime(workout_dates[-1], errors='coerce')
+                if pd.notna(date_obj):
+                    latest_date = date_obj.strftime('%B %d, %Y')
+                else:
+                    latest_date = workout_dates[-1]  # Use as is if parsing fails
+            except:
+                latest_date = workout_dates[-1]  # Use as is if any error occurs
+        
         team_data = [
             ["Metric", "Value"],
             ["Team Average RPE", f"{team_avg:.2f}"],
             ["Number of Athletes", str(num_athletes)],
             ["Workout Sessions", str(num_workouts)],
-            ["Latest Workout Date", workout_dates[-1] if workout_dates else "N/A"]
+            ["Latest Workout Date", latest_date]
         ]
         
         team_table = Table(team_data, colWidths=[2*inch, 2*inch])
@@ -489,7 +537,8 @@ def create_pdf_report(df, df_position_avg, df_position_daily_avg):
         
         # Athletes with High Acute:Chronic Ratio Section (formerly "Athletes Needing Attention")
         elements.append(Paragraph("ATHLETES WITH HIGH ACUTE:CHRONIC RATIO (INJURY RISK)", section_style))
-        elements.append(Paragraph("Athletes with A:C ratio > 1.5 may be at increased risk of injury", styles['Italic']))
+        elements.append(Paragraph("Athletes with A:C ratio > 1.35 may be at increased risk of injury", styles['Italic']))
+        elements.append(Paragraph("A:C ratio compares last 7 days of workload (acute) to last 28 days (chronic)", styles['Italic']))
         elements.append(Spacer(1, 0.1*inch))
         
         # Calculate acute:chronic workload ratios
@@ -497,21 +546,29 @@ def create_pdf_report(df, df_position_avg, df_position_daily_avg):
         
         attention_data = []
         if not ac_ratio_df.empty:
-            # Get athletes with A:C ratio > 1.5
-            high_risk_athletes = ac_ratio_df[ac_ratio_df['A:C Ratio'] > 1.5].sort_values('A:C Ratio', ascending=False)
+            # Get athletes with A:C ratio > 1.35 (CHANGED FROM 1.5)
+            high_risk_athletes = ac_ratio_df[ac_ratio_df['A:C Ratio'] > 1.35].sort_values('A:C Ratio', ascending=False)
             
             if not high_risk_athletes.empty:
-                attention_data = [["Athlete", "Position", "A:C Ratio", "Latest RPE"]]
+                attention_data = [["Athlete", "Position", "A:C Ratio", "Latest RPE", "Trend"]]
                 for _, row in high_risk_athletes.iterrows():
+                    # Add symbols for trend
+                    trend_symbol = "→"  # neutral
+                    if row['Trend'] == "increasing":
+                        trend_symbol = "↑"  # increasing
+                    elif row['Trend'] == "decreasing":
+                        trend_symbol = "↓"  # decreasing
+                        
                     attention_data.append([
                         row['Last Name'],
                         row['Position'],
                         f"{row['A:C Ratio']:.2f}",
-                        f"{row['Latest RPE']:.1f}"
+                        f"{row['Latest RPE']:.1f}",
+                        trend_symbol
                     ])
         
         if attention_data:
-            attention_table = Table(attention_data, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 1.5*inch])
+            attention_table = Table(attention_data, colWidths=[1.2*inch, 1.2*inch, 1.2*inch, 1.2*inch, 0.7*inch])
             attention_table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.Color(*TRUMAN_PURPLE)),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
