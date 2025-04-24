@@ -11,7 +11,7 @@ Developed for **Truman State University Athletics** by:
 - [Mason Crim](https://github.com/MasonC13) – Lead Developer & API Architect
 - [Nadine Thomas](https://github.com/Nadine-Thomas) – Frontend Engineer & UI/UX Designer
 - [Kacie Myers](https://github.com/kaciemyers23) – QA Engineer & Technical Documentation  
-- [Grace Lovell](https://github.com/grace-lovell) – Server Integration Engineer
+- [Grace Lovell](https://github.com/grace-lovell) – Server Integration Engineer & Technical Documentation
 
 ---
 
