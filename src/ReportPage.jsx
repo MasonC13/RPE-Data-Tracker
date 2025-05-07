@@ -29,7 +29,7 @@ const ReportPage = () => {
           
           <div className="report-iframe-container">
             <iframe
-              src="http://127.0.0.1:4025/dashboard/" 
+              src="/dashboard/" 
               title="Trainer Report"
               className="report-iframe"
             />

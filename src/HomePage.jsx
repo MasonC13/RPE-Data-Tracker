@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import "./index.css";
+import userManualPDF from './assets/rpe-user-manual.pdf';
 
 const HomePage = () => {
     const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [showHelpModal, setShowHelpModal] = useState(false);
     const [password, setPassword] = useState("");
     const [passwordError, setPasswordError] = useState("");
-    
-    const COACH_PASSWORD = "bulldogs";
 
     const handleAthleteClick = () => {
         window.location.href = "/form";
@@ -16,14 +16,26 @@ const HomePage = () => {
         setShowPasswordModal(true);
     };
     
-    const handlePasswordSubmit = (e) => {
+    const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         
-        if (password === COACH_PASSWORD) {
-            setPasswordError("");
-            window.location.href = "/report";
-        } else {
-            setPasswordError("Incorrect password. Please try again.");
+        try {
+            const response = await fetch('/api/authenticate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password }),
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                window.location.href = "/report";
+            } else {
+                setPasswordError(data.message || "Incorrect password. Please try again.");
+            }
+        } catch (error) {
+            setPasswordError("Network error. Please try again.");
         }
     };
     
@@ -35,6 +47,20 @@ const HomePage = () => {
         }
     };
 
+    const handleHelpClick = () => {
+        setShowHelpModal(true);
+    };
+
+    const handleCloseHelpModal = (e) => {
+        if (e.target === e.currentTarget) {
+            setShowHelpModal(false);
+        }
+    };
+
+    const downloadUserManual = () => {
+        window.open(userManualPDF, '_blank');
+    };
+
     return (
         <div className="container">
             <header className="header">
@@ -43,6 +69,17 @@ const HomePage = () => {
                         BULLDOGS ATHLETICS
                     </div>
                 </div>
+                <button 
+                    onClick={handleHelpClick} 
+                    className="help-button"
+                    title="Help"
+                >
+                    {/* Large question mark icon without outer circle */}
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 17L12 17.01" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M12 14C12 11 15 11.5 15 9C15 7.5 13.5 6 12 6C10.5 6 9 7.5 9 9" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                </button>
             </header>
             
             <div className="main-content">
@@ -148,6 +185,61 @@ const HomePage = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {showHelpModal && (
+                <div 
+                    className="modal-overlay"
+                    onClick={handleCloseHelpModal}
+                >
+                    <div 
+                        className="modal-content help-modal"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h3 className="modal-title">
+                            Help Resources
+                        </h3>
+                        
+                        <div className="help-content">
+                            <div className="help-section">
+                                <h4 className="help-subtitle">User Manual</h4>
+                                <p className="help-text">
+                                    The comprehensive user manual provides detailed instructions 
+                                    for both athletes and coaches on how to use the RPE Tracker.
+                                </p>
+                                <button
+                                    onClick={downloadUserManual}
+                                    className="help-download-button"
+                                >
+                                    <svg className="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    Download User Manual
+                                </button>
+                            </div>
+
+                            <div className="help-section">
+                                <h4 className="help-subtitle">Contact Support</h4>
+                                <p className="help-text">
+                                    For further assistance, contact the development team:
+                                </p>
+                                <p className="help-contact">
+                                    Email: rpereminder@gmail.com
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="button-group-horizontal">
+                            <button
+                                type="button"
+                                onClick={() => setShowHelpModal(false)}
+                                className="button-submit"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -650,3 +650,140 @@ body {
   color: var(--truman-light-blue-secondary);
   font-size: 0.875rem;
 }
+
+.help-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.help-button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.help-button svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--truman-light-blue-secondary);
+}
+
+.help-modal {
+  max-width: 500px;
+}
+
+.help-content {
+  margin: 1.5rem 0;
+}
+
+.help-section {
+  margin-bottom: 1.5rem;
+}
+
+.help-subtitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--truman-purple);
+  margin-bottom: 0.5rem;
+}
+
+.help-text {
+  font-size: 0.9rem;
+  color: #4b5563;
+  margin-bottom: 0.75rem;
+}
+
+.help-contact {
+  font-size: 0.9rem;
+  color: #4b5563;
+  background-color: rgba(79, 45, 127, 0.05);
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  border-left: 3px solid var(--truman-purple);
+}
+
+.help-download-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--truman-purple);
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.help-download-button:hover {
+  background-color: var(--truman-purple-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.help-download-button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.5rem;
+}
+
+.help-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;  /* Maintain large button size */
+    height: 60px; /* Maintain large button size */
+    padding: 0;
+    background-color: #512888; /* Truman State purple */
+    border: 3px solid white; /* Keep thicker border for visibility */
+    border-radius: 50%; /* Makes it perfectly circular */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2); /* Enhanced shadow */
+    margin-left: auto; /* Push to the right side */
+}
+
+.help-button:hover {
+    background-color: #3e1f69; /* Slightly darker purple on hover */
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}
+
+.help-button:active {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+.help-button svg {
+    width: 45px; /* Much larger icon */
+    height: 45px; /* Much larger icon */
+    stroke: white;
+    /* The question mark now takes up most of the button space */
+}
+
+/* Ensure the header layout works correctly */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+}

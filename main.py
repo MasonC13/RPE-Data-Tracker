@@ -6,6 +6,12 @@ from datetime import datetime, timedelta
 import numpy as np
 import json
 from io import StringIO
+from flask import send_from_directory, session, redirect
+from werkzeug.security import check_password_hash
+from dotenv import load_dotenv
+from pathlib import Path
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
 
 # Dashboard imports
 import dash
@@ -16,6 +22,21 @@ import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.serving import run_simple
+
+load_dotenv()
+
+# Configuration
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / 'dist'  # Your built React app
+DATA_DIR = BASE_DIR / 'data'
+DATA_DIR.mkdir(exist_ok=True)
+
+# Security settings
+SECRET_KEY = os.getenv('SECRET_KEY', os.urandom(32))
+COACH_PASSWORD_HASH = os.getenv('COACH_PASSWORD_HASH')
+
+# UPDATE CSV_FILE path:
+CSV_FILE = DATA_DIR / 'responses.csv'
 
 # Import other modules
 try:
@@ -36,9 +57,8 @@ TRUMAN_WHITE = "#FFFFFF"  # White
 TRUMAN_COLOR_SEQUENCE = [TRUMAN_PURPLE, TRUMAN_LIGHT_BLUE, TRUMAN_PURPLE_LIGHT, "#9E1B34", "#F1C038"]
 
 # Hardcoded coach emails - REPLACE THESE WITH ACTUAL COACH EMAILS
-COACH_EMAILS = [
-    "mc6383@truman.edu"
-]
+COACH_EMAILS = os.getenv('COACH_EMAILS', '').split(',')
+COACH_EMAILS = [email.strip() for email in COACH_EMAILS if email.strip()]
 
 # CSV file path - used by both apps
 CSV_FILE = "responses.csv"
@@ -58,9 +78,11 @@ if not os.path.exists(CSV_FILE):
     df = pd.DataFrame(columns=BASE_COLUMNS)
     df.to_csv(CSV_FILE, index=False)
 
-# Create the Flask app
-flask_app = Flask(__name__)
-CORS(flask_app)
+flask_app = Flask(__name__, 
+                  static_folder=str(STATIC_DIR),
+                  static_url_path='')
+
+flask_app.secret_key = SECRET_KEY
 
 # Create the Dash app
 dash_app = dash.Dash(
@@ -118,10 +140,37 @@ def submit_form():
     df.to_csv(CSV_FILE, index=False)
     return jsonify({"message": "Data saved successfully"}), 200
 
-# Redirect root to dashboard
-@flask_app.route("/")
-def index():
-    return flask_app.redirect("/dashboard/")
+@flask_app.route('/')
+@flask_app.route('/form')
+@flask_app.route('/report')
+def serve_react_app():
+    if request.path == '/report' and not session.get('authenticated'):
+        return redirect('/')
+    return send_from_directory(flask_app.static_folder, 'index.html')
+
+@flask_app.route('/assets/<path:path>')
+def serve_assets(path):
+    return send_from_directory(os.path.join(flask_app.static_folder, 'assets'), path)
+
+@flask_app.route("/api/authenticate", methods=["POST"])
+def authenticate():
+    data = request.json
+    password = data.get('password', '')
+    
+    if not password:
+        return jsonify({"success": False, "message": "Password is required"}), 400
+    
+    if COACH_PASSWORD_HASH and check_password_hash(COACH_PASSWORD_HASH, password):
+        session['authenticated'] = True
+        return jsonify({"success": True})
+    
+    return jsonify({"success": False, "message": "Invalid password"}), 401
+
+@flask_app.route("/dashboard/")
+def dashboard_route():
+    if not session.get('authenticated'):
+        return redirect('/')
+    return dash_app.index()
 
 # Function to get data from CSV (moved from pythonCSV.py)
 def get_data_from_csv():

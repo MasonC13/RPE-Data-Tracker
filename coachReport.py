@@ -164,23 +164,20 @@ def send_email_with_pdf(recipient, subject, message, pdf_buffer):
     """Send email with PDF report attached"""
     
     try:
-        # Load credentials file
-        with open("credentials.json", "r") as file:
-            creds_data = json.load(file)
+        # Load credentials from environment variables
+        import os
+        from dotenv import load_dotenv
         
-        # Email Setup using credentials.json
-        try:
-            SMTP_SERVER = creds_data["email_settings"]["smtp_server"]
-            SMTP_PORT = creds_data["email_settings"]["smtp_port"]
-            SENDER_EMAIL = creds_data["email_settings"]["sender_email"]
-            SENDER_PASSWORD = creds_data["email_settings"]["sender_password"]
-        except KeyError as e:
-            print(f"Missing key in email settings: {e}")
-            return False
-
-        # Error check for credentials file setup
-        if not SENDER_EMAIL or not SENDER_PASSWORD:
-            print("Email or password is not set in credentials.json. Skipping email.")
+        load_dotenv()
+        
+        SMTP_SERVER = os.getenv('SMTP_SERVER')
+        SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
+        SENDER_EMAIL = os.getenv('SENDER_EMAIL')
+        SENDER_PASSWORD = os.getenv('SENDER_PASSWORD')
+        
+        # Error check for environment variables
+        if not all([SMTP_SERVER, SMTP_PORT, SENDER_EMAIL, SENDER_PASSWORD]):
+            print("Missing email configuration in environment variables. Please check your .env file.")
             return False
 
         # Create email with attachment
