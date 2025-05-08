@@ -3,7 +3,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 import io
-import json
+import os
+from dotenv import load_dotenv
 import plotly.express as px
 from datetime import datetime
 from pythonCSV import get_data_from_csv
@@ -11,25 +12,18 @@ from pythonCSV import get_data_from_csv
 def send_email(recipient, subject="RPE Data Reminder", message="Please fill out your RPE data today", include_graph=False):
     """Send an email with optional graph attachment."""
     
-    with open("credentials.json", "r") as file:
-        creds_data = json.load(file)
+    # Load environment variables
+    load_dotenv()
     
-    # Email Setup using credentials.json
-    try:
-        SMTP_SERVER = creds_data["email_settings"]["smtp_server"]
-        SMTP_PORT = creds_data["email_settings"]["smtp_port"]
-        SENDER_EMAIL = creds_data["email_settings"]["sender_email"]
-        SENDER_PASSWORD = creds_data["email_settings"]["sender_password"]
-    except KeyError as e:
-        print(f"Missing key in email settings: {e}")
-        SMTP_SERVER = "smtp.gmail.com"
-        SMTP_PORT = 587
-        SENDER_EMAIL = ""
-        SENDER_PASSWORD = ""
+    # Email Setup using environment variables
+    SMTP_SERVER = os.getenv('SMTP_SERVER')
+    SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
+    SENDER_EMAIL = os.getenv('SENDER_EMAIL')
+    SENDER_PASSWORD = os.getenv('SENDER_PASSWORD')
 
     # ✅ Added safety check
-    if not SENDER_EMAIL or not SENDER_PASSWORD:
-        print("Email or password is not set in credentials.json. Skipping email.")
+    if not SENDER_EMAIL or not SENDER_PASSWORD or not SMTP_SERVER:
+        print("Email configuration not set in .env file. Skipping email.")
         return False
 
     try:
