@@ -52,7 +52,7 @@ const MyForm = () => {
                             </svg>
                         </div>
                         <h2 className="success-title">Thank You!</h2>
-                        <p className="success-message">Your RPE response has been submitted successfully.</p>
+                        <p className="success-message">Your responses have been submitted successfully.</p>
                         <div className="success-date">
                             Submitted on: {new Date().toLocaleDateString()}
                         </div>
@@ -83,7 +83,7 @@ const MyForm = () => {
                 <div className="form-card">
                     <div className="form-card-header">
                         <h1 className="form-title">
-                            Rate of Perceived Exertion
+                            Daily Athletic Tracking
                         </h1>
                         <div className="form-subtitle">
                             Truman State University Athletics
@@ -97,39 +97,50 @@ const MyForm = () => {
                             </div>
                         )}
 
-                        <div className="field-group">
-                            {/* Email field with @truman.edu suffix */}
-                            <div className="field">
-                                <label className="field-label">Truman Email Address (Only Enter Beginning of Email)</label>
-                                <div style={{ display: 'flex', alignItems: 'center' }}>
-                                    <input
-                                        {...register("emailPrefix", {
-                                            required: "Email is required",
-                                            pattern: {
-                                                value: /^[a-zA-Z0-9._%+-]+$/,
-                                                message: "Invalid format before @truman.edu"
-                                            }
-                                        })}
-                                        className="field-input"
-                                        placeholder="jsmith"
-                                        type="text"
-                                        style={{ flex: 1 }}
-                                    />
-                                    <span style={{
-                                        marginLeft: '8px',
-                                        color: '#555',
-                                        fontWeight: 'bold',
-                                        whiteSpace: 'nowrap'
-                                    }}>
-                                        @truman.edu
-                                    </span>
-                                </div>
-                                {errors.emailPrefix && <p className="field-error">{errors.emailPrefix.message}</p>}
+                        {/* Email field with @truman.edu suffix */}
+                        <div className="field">
+                            <label className="field-label">Truman Email Address (Only Enter Beginning of Email)</label>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <input
+                                    {...register("emailPrefix", {
+                                        required: "Email is required",
+                                        pattern: {
+                                            value: /^[a-zA-Z0-9._%+-]+$/,
+                                            message: "Invalid format before @truman.edu"
+                                        }
+                                    })}
+                                    className="field-input"
+                                    placeholder="jsmith"
+                                    type="text"
+                                    style={{ flex: 1 }}
+                                />
+                                <span style={{
+                                    marginLeft: '8px',
+                                    color: '#555',
+                                    fontWeight: 'bold',
+                                    whiteSpace: 'nowrap'
+                                }}>
+                                    @truman.edu
+                                </span>
                             </div>
+                            {errors.emailPrefix && <p className="field-error">{errors.emailPrefix.message}</p>}
+                        </div>
 
-                            {/* RPE selection */}
+                        {/* RPE Section */}
+                        <div className="section-header" style={{ 
+                            marginTop: '1.5rem', 
+                            fontSize: '1.25rem', 
+                            fontWeight: 'bold',
+                            color: 'var(--truman-purple)',
+                            borderBottom: '2px solid var(--truman-light-blue)',
+                            paddingBottom: '0.5rem'
+                        }}>
+                            Workout Intensity
+                        </div>
+                        
+                        <div className="field-group" style={{ marginTop: '1rem' }}>
                             <div className="field">
-                                <label className="field-label">Intensity Level (1-10)</label>
+                                <label className="field-label">Rate of Perceived Exertion (1-10)</label>
                                 <select
                                     {...register("intensityLevel", { required: "Please select an intensity level" })}
                                     defaultValue=""
@@ -158,7 +169,96 @@ const MyForm = () => {
                             </div>
                         </div>
 
-                        <div style={{ marginTop: '1.5rem' }}>
+                        {/* Caffeine Section */}
+                        <div className="section-header" style={{ 
+                            marginTop: '2rem', 
+                            fontSize: '1.25rem', 
+                            fontWeight: 'bold',
+                            color: 'var(--truman-purple)',
+                            borderBottom: '2px solid var(--truman-light-blue)',
+                            paddingBottom: '0.5rem'
+                        }}>
+                            Caffeine Intake
+                        </div>
+                        
+                        <div className="field-group" style={{ marginTop: '1rem' }}>
+                            <div className="field">
+                                <label className="field-label">Caffeine Intake</label>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <input
+                                        {...register("caffeineIntake", {
+                                            required: "Caffeine intake is required",
+                                            min: { value: 0, message: "Value cannot be negative" },
+                                            max: { value: 1000, message: "Value cannot exceed 1000" },
+                                            pattern: { value: /^[0-9]+$/, message: "Please enter a valid number" }
+                                        })}
+                                        type="number"
+                                        placeholder="Enter caffeine intake"
+                                        className="field-input"
+                                        style={{ flex: 1 }}
+                                    />
+                                    <span style={{
+                                        marginLeft: '8px',
+                                        color: '#555',
+                                        fontWeight: 'bold',
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                        mg
+                                    </span>
+                                </div>
+                                {errors.caffeineIntake && <p className="field-error">{errors.caffeineIntake.message}</p>}
+                                <div className="info-text" style={{ textAlign: 'left', marginTop: '10px' }}>
+                                    <p>Reference amounts:</p>
+                                    <ul style={{ paddingLeft: '20px', marginTop: '5px', fontSize: '0.75rem', color: '#718096' }}>
+                                        <li>Coffee (8oz): ~100mg</li>
+                                        <li>Energy Drink (16oz): ~160mg</li>
+                                        <li>Tea (8oz): ~50mg</li>
+                                        <li>Soda (12oz): ~40mg</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Sleep Section */}
+                        <div className="section-header" style={{ 
+                            marginTop: '2rem', 
+                            fontSize: '1.25rem', 
+                            fontWeight: 'bold',
+                            color: 'var(--truman-purple)',
+                            borderBottom: '2px solid var(--truman-light-blue)',
+                            paddingBottom: '0.5rem'
+                        }}>
+                            Sleep Data
+                        </div>
+                        
+                        <div className="field-group" style={{ marginTop: '1rem' }}>
+                            <div className="field">
+                                <label className="field-label">Hours of Sleep</label>
+                                <select
+                                    {...register("sleepHours", { required: "Please select hours of sleep" })}
+                                    defaultValue=""
+                                    className="field-input"
+                                >
+                                    <option value="" disabled>Select hours of sleep</option>
+                                    <option value="0">0 hours</option>
+                                    <option value="1">1 hour</option>
+                                    <option value="2">2 hours</option>
+                                    <option value="3">3 hours</option>
+                                    <option value="4">4 hours</option>
+                                    <option value="5">5 hours</option>
+                                    <option value="6">6 hours</option>
+                                    <option value="7">7 hours</option>
+                                    <option value="8">8 hours</option>
+                                    <option value="9">9 hours</option>
+                                    <option value="10">10 hours</option>
+                                    <option value="11">11 hours</option>
+                                    <option value="12">12 hours</option>
+                                </select>
+                                {errors.sleepHours && <p className="field-error">{errors.sleepHours.message}</p>}
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: '2rem' }}>
                             <button
                                 type="submit"
                                 disabled={loading}
@@ -173,13 +273,13 @@ const MyForm = () => {
                                         Submitting...
                                     </span>
                                 ) : (
-                                    'Submit Response'
+                                    'Submit All Data'
                                 )}
                             </button>
                         </div>
 
                         <div className="info-text">
-                            Your response will be recorded for {new Date().toLocaleDateString()}
+                            Your responses will be recorded for {new Date().toLocaleDateString()}
                         </div>
                     </form>
                 </div>

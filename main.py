@@ -93,52 +93,247 @@ dash_app = dash.Dash(
 )
 dash_app.config.suppress_callback_exceptions = True
 
-# Form submission endpoint
 @flask_app.route("/submit", methods=["POST"])
 def submit_form():
-    data = request.json
-    today_str = datetime.today().strftime("%m/%d/%Y")  # e.g. 4/15/2025
-
-    # Load existing CSV
-    df = pd.read_csv(CSV_FILE)
-
-    # Add today's date column if not exists
-    if today_str not in df.columns:
-        df[today_str] = ""
-
-    # Check if user already exists (by email)
-    email = data.get("email")
-    user_index = df[df["Email"] == email].index
-
-    if len(user_index) > 0:
-        # Update existing row with intensity level
-        idx = user_index[0]
-        df.at[idx, today_str] = data.get("intensityLevel")  # Store intensity level for today
-    else:
-        # Create new row with intensity level
-        new_row = {
-            "Email": data.get("email"),
-            "Last 4 Digits": data.get("last4"),
-            "Last Name": data.get("lastName"),
-            "First Name": data.get("firstName"),
-            "Position": data.get("position"),
-            "Summer Attendance": data.get("summerAttendance"),
-            today_str: data.get("intensityLevel")  # Store intensity level for today
-        }
-
-        # Fill missing date columns
-        for col in df.columns:
-            if col not in new_row:
-                new_row[col] = ""
-
-        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-
-    # Reorder columns: base + dates
-    date_cols = [col for col in df.columns if col not in BASE_COLUMNS]
-    df = df[BASE_COLUMNS + sorted(date_cols, key=lambda x: datetime.strptime(x, "%m/%d/%Y"))]
-
-    df.to_csv(CSV_FILE, index=False)
-    return jsonify({"message": "Data saved successfully"}), 200
+    try:
+        data = request.json
+        print("Received data:", data)  # Debug print to verify data is received
+        
+        today_str = datetime.today().strftime("%m/%d/%Y")  # e.g. 4/15/2025
+        
+        # Get common user data
+        email = data.get("email", "")
+        if not email and "emailPrefix" in data:
+            email = f"{data.get('emailPrefix')}@truman.edu"
+            
+        last4 = data.get("last4", "")
+        lastName = data.get("lastName", "")
+        firstName = data.get("firstName", "")
+        position = data.get("position", "")
+        summerAttendance = data.get("summerAttendance", "")
+        
+        print(f"Processing data for email: {email}, date: {today_str}")
+        
+        # Using files in the main directory
+        rpe_csv_file = "responses.csv"
+        caffeine_csv_file = "caffeine.csv"
+        sleep_csv_file = "sleep.csv"
+        
+        print(f"CSV files: RPE: {rpe_csv_file}, Caffeine: {caffeine_csv_file}, Sleep: {sleep_csv_file}")
+        
+        # Create initial CSV files if they don't exist
+        for csv_file, file_name in [(rpe_csv_file, "responses.csv"), 
+                                   (caffeine_csv_file, "caffeine.csv"), 
+                                   (sleep_csv_file, "sleep.csv")]:
+            if not os.path.exists(csv_file):
+                print(f"Creating new CSV file: {csv_file}")
+                df = pd.DataFrame(columns=BASE_COLUMNS)
+                df.to_csv(csv_file, index=False)
+                print(f"Created CSV with columns: {BASE_COLUMNS}")
+        
+        # 1. RPE data handling - works fine
+        if "intensityLevel" in data:
+            print(f"Processing RPE data: {data.get('intensityLevel')}")
+            try:
+                df_rpe = pd.read_csv(rpe_csv_file)
+                print(f"Loaded RPE CSV with columns: {df_rpe.columns.tolist()}")
+                
+                # Add today's date column if not exists
+                if today_str not in df_rpe.columns:
+                    df_rpe[today_str] = ""
+                    print(f"Added new date column: {today_str}")
+                
+                # Check if user already exists (by email)
+                user_index = df_rpe[df_rpe["Email"] == email].index
+                
+                if len(user_index) > 0:
+                    # Update existing row
+                    idx = user_index[0]
+                    df_rpe.at[idx, today_str] = data.get("intensityLevel")
+                    print(f"Updated existing RPE record for {email}")
+                else:
+                    # Create new row
+                    new_row = {
+                        "Email": email,
+                        "Last 4 Digits": last4,
+                        "Last Name": lastName,
+                        "First Name": firstName,
+                        "Position": position,
+                        "Summer Attendance": summerAttendance,
+                        today_str: data.get("intensityLevel")
+                    }
+                    
+                    # Fill missing date columns
+                    for col in df_rpe.columns:
+                        if col not in new_row:
+                            new_row[col] = ""
+                    
+                    df_rpe = pd.concat([df_rpe, pd.DataFrame([new_row])], ignore_index=True)
+                    print(f"Created new RPE record for {email}")
+                
+                # Reorder columns: base + dates
+                date_cols = [col for col in df_rpe.columns if col not in BASE_COLUMNS]
+                df_rpe = df_rpe[BASE_COLUMNS + sorted(date_cols, key=lambda x: datetime.strptime(x, "%m/%d/%Y"))]
+                
+                # Save the updated CSV
+                df_rpe.to_csv(rpe_csv_file, index=False)
+                print(f"Saved RPE data to {rpe_csv_file}")
+            except Exception as e:
+                print(f"Error processing RPE data: {str(e)}")
+        
+        # 2. Caffeine data - handling tab-delimited file problems
+        if "caffeineIntake" in data:
+            print(f"Processing caffeine data: {data.get('caffeineIntake')}")
+            try:
+                # Check if file exists and create it if it doesn't with correct format
+                if not os.path.exists(caffeine_csv_file) or os.path.getsize(caffeine_csv_file) == 0:
+                    # Create a new file with comma delimiter
+                    df_caffeine = pd.DataFrame(columns=BASE_COLUMNS)
+                    df_caffeine.to_csv(caffeine_csv_file, index=False)
+                    print(f"Created new caffeine CSV with proper format")
+                else:
+                    try:
+                        # Try to read as CSV first
+                        df_caffeine = pd.read_csv(caffeine_csv_file)
+                    except Exception as e:
+                        print(f"Error reading caffeine file as CSV, trying tab delimiter: {str(e)}")
+                        # If that fails, try to read with tab delimiter
+                        try:
+                            df_caffeine = pd.read_csv(caffeine_csv_file, sep='\t')
+                            # If successful, save it back with proper CSV format
+                            df_caffeine.to_csv(caffeine_csv_file, index=False)
+                            print("Converted tab-delimited file to CSV format")
+                        except Exception as e2:
+                            print(f"Error reading tab-delimited file: {str(e2)}")
+                            # If all fails, create a new file
+                            df_caffeine = pd.DataFrame(columns=BASE_COLUMNS)
+                            df_caffeine.to_csv(caffeine_csv_file, index=False)
+                            print("Created new caffeine CSV after read errors")
+                
+                print(f"Loaded caffeine CSV with columns: {df_caffeine.columns.tolist()}")
+                
+                # Add today's date column if not exists
+                if today_str not in df_caffeine.columns:
+                    df_caffeine[today_str] = ""
+                    print(f"Added new date column: {today_str}")
+                
+                # Check if user already exists (by email)
+                user_index = df_caffeine[df_caffeine["Email"] == email].index
+                
+                if len(user_index) > 0:
+                    # Update existing row
+                    idx = user_index[0]
+                    df_caffeine.at[idx, today_str] = data.get("caffeineIntake")
+                    print(f"Updated existing caffeine record for {email}")
+                else:
+                    # Create new row
+                    new_row = {
+                        "Email": email,
+                        "Last 4 Digits": last4,
+                        "Last Name": lastName,
+                        "First Name": firstName,
+                        "Position": position,
+                        "Summer Attendance": summerAttendance,
+                        today_str: data.get("caffeineIntake")
+                    }
+                    
+                    # Fill missing date columns
+                    for col in df_caffeine.columns:
+                        if col not in new_row:
+                            new_row[col] = ""
+                    
+                    df_caffeine = pd.concat([df_caffeine, pd.DataFrame([new_row])], ignore_index=True)
+                    print(f"Created new caffeine record for {email}")
+                
+                # Reorder columns: base + dates
+                date_cols = [col for col in df_caffeine.columns if col not in BASE_COLUMNS]
+                df_caffeine = df_caffeine[BASE_COLUMNS + sorted(date_cols, key=lambda x: datetime.strptime(x, "%m/%d/%Y"))]
+                
+                # Save the updated CSV
+                df_caffeine.to_csv(caffeine_csv_file, index=False)
+                print(f"Saved caffeine data to {caffeine_csv_file}")
+            except Exception as e:
+                print(f"Error processing caffeine data: {str(e)}")
+        
+        # 3. Sleep data - handling tab-delimited file problems
+        if "sleepHours" in data:
+            print(f"Processing sleep data: {data.get('sleepHours')}")
+            try:
+                # Check if file exists and create it if it doesn't with correct format
+                if not os.path.exists(sleep_csv_file) or os.path.getsize(sleep_csv_file) == 0:
+                    # Create a new file with comma delimiter
+                    df_sleep = pd.DataFrame(columns=BASE_COLUMNS)
+                    df_sleep.to_csv(sleep_csv_file, index=False)
+                    print(f"Created new sleep CSV with proper format")
+                else:
+                    try:
+                        # Try to read as CSV first
+                        df_sleep = pd.read_csv(sleep_csv_file)
+                    except Exception as e:
+                        print(f"Error reading sleep file as CSV, trying tab delimiter: {str(e)}")
+                        # If that fails, try to read with tab delimiter
+                        try:
+                            df_sleep = pd.read_csv(sleep_csv_file, sep='\t')
+                            # If successful, save it back with proper CSV format
+                            df_sleep.to_csv(sleep_csv_file, index=False)
+                            print("Converted tab-delimited file to CSV format")
+                        except Exception as e2:
+                            print(f"Error reading tab-delimited file: {str(e2)}")
+                            # If all fails, create a new file
+                            df_sleep = pd.DataFrame(columns=BASE_COLUMNS)
+                            df_sleep.to_csv(sleep_csv_file, index=False)
+                            print("Created new sleep CSV after read errors")
+                
+                print(f"Loaded sleep CSV with columns: {df_sleep.columns.tolist()}")
+                
+                # Add today's date column if not exists
+                if today_str not in df_sleep.columns:
+                    df_sleep[today_str] = ""
+                    print(f"Added new date column: {today_str}")
+                
+                # Check if user already exists (by email)
+                user_index = df_sleep[df_sleep["Email"] == email].index
+                
+                if len(user_index) > 0:
+                    # Update existing row
+                    idx = user_index[0]
+                    df_sleep.at[idx, today_str] = data.get("sleepHours")
+                    print(f"Updated existing sleep record for {email}")
+                else:
+                    # Create new row
+                    new_row = {
+                        "Email": email,
+                        "Last 4 Digits": last4,
+                        "Last Name": lastName,
+                        "First Name": firstName,
+                        "Position": position,
+                        "Summer Attendance": summerAttendance,
+                        today_str: data.get("sleepHours")
+                    }
+                    
+                    # Fill missing date columns
+                    for col in df_sleep.columns:
+                        if col not in new_row:
+                            new_row[col] = ""
+                    
+                    df_sleep = pd.concat([df_sleep, pd.DataFrame([new_row])], ignore_index=True)
+                    print(f"Created new sleep record for {email}")
+                
+                # Reorder columns: base + dates
+                date_cols = [col for col in df_sleep.columns if col not in BASE_COLUMNS]
+                df_sleep = df_sleep[BASE_COLUMNS + sorted(date_cols, key=lambda x: datetime.strptime(x, "%m/%d/%Y"))]
+                
+                # Save the updated CSV
+                df_sleep.to_csv(sleep_csv_file, index=False)
+                print(f"Saved sleep data to {sleep_csv_file}")
+            except Exception as e:
+                print(f"Error processing sleep data: {str(e)}")
+        
+        return jsonify({"message": "All data saved successfully"}), 200
+    
+    except Exception as e:
+        print(f"Error in submit_form: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 500
 
 @flask_app.route('/')
 @flask_app.route('/form')
