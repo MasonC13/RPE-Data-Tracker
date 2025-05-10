@@ -306,11 +306,11 @@ def calculate_acute_chronic_ratio(df):
             total_values = [v[1] for v in values]
             
             # Calculate acute workload (last 7 days average)
-            last_7_values = total_values[-7:] if len(total_values) >= 7 else total_values
+            last_7_values = total_values[-4:] if len(total_values) >= 4 else total_values
             acute = sum(last_7_values) / len(last_7_values) if last_7_values else 0
             
             # Calculate chronic workload (last 28 days average)
-            last_28_values = total_values[-28:] if len(total_values) >= 28 else total_values
+            last_28_values = total_values[-8:] if len(total_values) >= 8 else total_values
             chronic = sum(last_28_values) / len(last_28_values) if last_28_values else 0
             
             # Calculate A:C ratio
