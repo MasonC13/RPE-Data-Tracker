@@ -1360,6 +1360,7 @@ def send_reminders(n_clicks, json_data):
             f"{greeting}\n\n"
             f"This is a reminder from the Truman State Bulldogs coaching staff to fill out your RPE data for today's workout.\n"
             f"Your input helps us track and optimize training for our team success.\n\n"
+            f"Submit your data now at: https://rpe.truman.edu\n\n"
             f"Go Bulldogs!\n"
             f"Truman State University Coaching Staff"
         )
