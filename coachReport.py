@@ -14,6 +14,24 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_CENTER
 
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Get the absolute path to the project root
+BASE_DIR = Path(__file__).resolve().parent
+
+# Load environment variables from the project root
+env_path = BASE_DIR / '.env'
+print(f"Loading .env from: {env_path}")
+load_dotenv(dotenv_path=env_path)
+
+# Verify environment variables are loaded
+SMTP_SERVER = os.getenv('SMTP_SERVER')
+SMTP_PORT = os.getenv('SMTP_PORT')
+SENDER_EMAIL = os.getenv('SENDER_EMAIL')
+print(f"Loaded email config: Server={SMTP_SERVER}, Port={SMTP_PORT}, Email={SENDER_EMAIL}")
+
 # Specify Truman State Color Palette
 TRUMAN_PURPLE = (79/255, 45/255, 127/255)  # RGB for PDF
 TRUMAN_LIGHT_BLUE = (0/255, 178/255, 227/255)  # RGB for PDF
@@ -165,10 +183,6 @@ def send_email_with_pdf(recipient, subject, message, pdf_buffer):
     
     try:
         # Load credentials from environment variables
-        import os
-        from dotenv import load_dotenv
-        
-        load_dotenv()
         
         SMTP_SERVER = os.getenv('SMTP_SERVER')
         SMTP_PORT = int(os.getenv('SMTP_PORT', 587))

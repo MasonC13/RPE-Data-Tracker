@@ -8,13 +8,25 @@ from dotenv import load_dotenv
 import plotly.express as px
 from datetime import datetime
 from pythonCSV import get_data_from_csv
+from pathlib import Path
+
+# Get the absolute path to the project root
+BASE_DIR = Path(__file__).resolve().parent
+
+# Load environment variables from the project root
+env_path = BASE_DIR / '.env'
+print(f"Loading .env from: {env_path}")
+load_dotenv(dotenv_path=env_path)
+
+# Verify environment variables are loaded
+SMTP_SERVER = os.getenv('SMTP_SERVER')
+SMTP_PORT = os.getenv('SMTP_PORT')
+SENDER_EMAIL = os.getenv('SENDER_EMAIL')
+print(f"Loaded email config: Server={SMTP_SERVER}, Port={SMTP_PORT}, Email={SENDER_EMAIL}")
 
 def send_email(recipient, subject="RPE Data Reminder", message="Please fill out your RPE data today", include_graph=False):
     """Send an email with optional graph attachment."""
-    
-    # Load environment variables
-    load_dotenv()
-    
+
     # Email Setup using environment variables
     SMTP_SERVER = os.getenv('SMTP_SERVER')
     SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
